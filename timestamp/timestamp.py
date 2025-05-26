@@ -3,10 +3,10 @@
 import sys
 import pytz
 from datetime import datetime, timezone
-
 from typing import Dict, Tuple, List
-
 import argparse
+
+DEFAULT_TZ = 'UTC'
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -15,13 +15,15 @@ def parse_args():
 
     parser.add_argument(
         "time_value",
+        nargs="?",
+        default=None,
         help="Time input (e.g., epoch, '2025-05-26 23:34', '2025-05-26T23:34:40.123')"
     )
 
     parser.add_argument(
         "timezone",
         nargs="?",
-        default="UTC",
+        default=None,
         help="Optional source timezone label (default: UTC). Example: IST, PST"
     )
 
@@ -79,9 +81,10 @@ class TimeOutput:
         )
 
 
+
 # Mapping of friendly labels to pytz timezone names
 LABEL_TO_PYTZ = {
-    'UTC': 'UTC',
+    DEFAULT_TZ: DEFAULT_TZ,
     'IST': 'Asia/Kolkata',
     'PST': 'America/Los_Angeles'
 }
@@ -186,16 +189,22 @@ def format_table(rows, headers=None):
 
     return '\n'.join(result)
 
-def parse_time (time_input: str, tz: str):
+def parse_time (time_input=None, tz=None):
+    if not time_input:
+        timezone = pytz.timezone(DEFAULT_TZ)
+        return TimeOutput(datetime.now(timezone), LABEL_TO_PYTZ)
+    # print(f'Time=|{time_input}|')
     try:
         # tz is ignored here
         # Try parsing as epoch integer
-        epoch = int(time_input)
+        epoch = float(time_input)
         dt = detect_epoch_precision(epoch)
         return TimeOutput(dt, LABEL_TO_PYTZ)
     except ValueError:
         pass
 
+    if tz is None:
+        tz = DEFAULT_TZ
     dt = parse_time_input(time_input)
     if tz not in LABEL_TO_PYTZ:
         raise ValueError(f"Unknown timezone label: {source_tz_label}")

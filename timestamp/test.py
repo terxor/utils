@@ -1,12 +1,12 @@
 import unittest
-import os, sys
+import os, sys, time
 import csv
 
 from timestamp import parse_time
 
 class TestTimestampParsing(unittest.TestCase):
     def test_day_parse(self):
-        output = parse_time('2025-01-01', 'UTC')
+        output = parse_time('2025-01-01')
         self.assertEqual(output.epoch_seconds, 1735689600)
         self.assertEqual(output.epoch_millis, 1735689600000)
         self.assertEqual(output.epoch_micros, 1735689600000000)
@@ -58,7 +58,7 @@ class TestTimestampParsing(unittest.TestCase):
         self.assertEqual(output.tz_times['PST'][2], '2025-05-26T02:10:51-0700')
 
     def test_us_parse(self):
-        output = parse_time('1735689612987654', 'UTC')
+        output = parse_time('1735689612987654')
         self.assertEqual(output.epoch_seconds, 1735689612)
         self.assertEqual(output.epoch_millis, 1735689612987)
         self.assertEqual(output.epoch_micros, 1735689612987654)
@@ -85,22 +85,31 @@ class TestTimestampParsing(unittest.TestCase):
 
     def test_equality(self):
         self.assertEqual(
-                parse_time('2025-01-01', 'UTC'),
-                parse_time('1735689600', 'UTC')
+                parse_time('2025-01-01'),
+                parse_time('1735689600')
         )
         self.assertEqual(
-                parse_time('2025-01-01', 'UTC'),
-                parse_time('2025-01', 'UTC')
+                parse_time('2025-01-01'),
+                parse_time('2025-01')
         )
         self.assertEqual(
-                parse_time('2025-01-01', 'UTC'),
-                parse_time('2025', 'UTC')
+                parse_time('2025-01-01'),
+                parse_time('2025')
         )
 
     def test_equality_zones(self):
         self.assertEqual(
                 parse_time('2025-05-26 15:00:00', 'IST'),
                 parse_time('2025-05-26 02:30:00', 'PST')
+        )
+
+    def test_no_args(self):
+        now_output = parse_time()
+        now_output_exp = parse_time(str(time.time()))
+        # at least seconds should be equal
+        self.assertEqual(
+                now_output.epoch_seconds,
+                now_output_exp.epoch_seconds
         )
 
 if __name__ == "__main__":
