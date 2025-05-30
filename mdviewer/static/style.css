@@ -1,0 +1,166 @@
+body {
+  display: flex;
+  font-family: sans-serif;
+  background-color: #f0f2f5;
+}
+
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  overflow-y: auto;
+  background: #f0f2f5;  /* or your choice */
+  padding: 1rem;
+  /* box-shadow: 2px 0 5px rgba(0,0,0,0.1); */
+  z-index: 10;
+}
+
+
+/* Full-width content wrapper */
+#content {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;   /* center horizontally */
+  align-items: flex-start;   /* align top */
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* Markdown area */
+.markdown-body {
+  max-width: 900px;
+  width: 100%;
+  background: white;
+  padding: 2rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  border-radius: 6px;
+}
+
+#tree .file {
+  color: #4a6e8a;           /* Muted blue */
+  cursor: pointer;          /* Show pointer cursor to indicate clickable */
+  user-select: none;        /* Optional: prevent text selection on click */
+  text-decoration: none;    /* Ensure no underline */
+  transition: color 0.3s;
+}
+
+#tree .file:hover {
+  color: #2c4d66;           /* Slightly darker on hover */
+  text-decoration: underline;
+}
+
+#viewer {
+  margin: 1.5em auto;    /* vertical spacing + auto horizontal centering */
+  padding: 0 1.2em;      /* horizontal padding on small screens */
+  line-height: 1.6;       /* improve text readability */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1rem;
+
+  /* background-color: white; */
+  /* box-sizing: border-box; */
+  /* box-shadow: 0 4px 8px rgba(0,0,0,0.15); */
+}
+
+/* #viewer {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+} */
+
+.file {
+  color: blue;
+  cursor: pointer;
+}
+.file:hover {
+  text-decoration: underline;
+}
+
+blockquote {
+  display: inline-block;
+  margin: 16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  background: #FDFAF6;
+  /* border-left: 3px solid #95ccf1; */
+  border-left: 3px solid #E6B2BA;
+  color: #444444;
+  /* padding: 1px; */
+  /* padding-left: 10px; */
+  /* padding-top: 18px; */
+  /* padding-left: 15px; */
+}
+
+
+div > pre.highlight {
+  border-left: 5px solid #ccc;
+  padding-left: 5px;
+}
+
+/* Container for block code */
+pre {
+  background: #F8FAFC;
+  display: block;
+  padding: 6px 6px;          /* Comfortable padding */
+  /*border-radius: 2px;*/          /* Rounded corners */
+  overflow-x: auto;            /* Horizontal scroll if too wide */
+  font-size: 0.95rem;
+  line-height: 1.45;
+  /*box-shadow: 0 2px 4px rgba(0,0,0,0.15);*/
+  margin-bottom: 1.5em;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+pre > code {
+  /* color: #870000 */
+  color: #3674B5; 
+}
+
+/* Inline code styling */
+code {
+  /* background-color: #f5f5f5; */
+  color: 		#875f5f		;
+  /* padding: 0.15em 0.4em; */
+  /* border-radius: 4px; */
+  font-family: 'Iosevka Term', 'Fira Mono', Consolas, Monaco, monospace;
+  /* font-size: 0.9rem; */
+}
+
+
+
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+  background-color: #fff;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.6rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-body th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.markdown-body tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.markdown-body hr {
+  border: none;              /* Remove default borders */
+  border-top: 1px solid #ccc; /* Light gray top border */
+  margin: 1.5rem 0;          /* Vertical spacing */
+  opacity: 0.5;              /* Make it less intense */
+}

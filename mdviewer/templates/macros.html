@@ -1,0 +1,11 @@
+{% macro render_tree(tree) %}
+  <ul>
+  {% for item in tree %}
+    {% if item.type == 'directory' %}
+      <li><strong>{{ item.name }}</strong>{{ render_tree(item.children) }}</li>
+    {% elif item.type == 'file' %}
+      <li class="file" data-path="{{ item.path }}">{{ item.name }}</li>
+    {% endif %}
+  {% endfor %}
+  </ul>
+{% endmacro %}

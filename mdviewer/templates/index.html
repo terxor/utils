@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <title>Markdown Tree Viewer</title>
+  <link rel="stylesheet" href="/static/style.css">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
+
+    <!-- The loading of KaTeX is deferred to speed up page rendering -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
+
+    <!-- To automatically render math in text elements, include the auto-render extension: -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+    <div id="sidebar">
+      {% from "macros.html" import render_tree %}
+      <div id="tree">{{ render_tree(tree) }}</div>
+    </div>
+
+    <div id="content">
+      <div class="markdown-body">
+        <div id="viewer">Select a Markdown file to view</div>
+      </div>
+    </div>
+
+
+<script>
+  const fetchContent = (fp) => {
+    fetch('/content?file=' + encodeURIComponent(fp))
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('viewer').innerHTML = html;
+        renderMathInElement(viewer, {
+             delimiters: [
+               {left: '$$', right: '$$', display: true},
+               {left: '\\[', right: '\\]', display: true},
+               {left: '$', right: '$', display: false},
+               {left: '\\(', right: '\\)', display: false}
+             ],
+             throwOnError: false
+    });
+        history.pushState({}, '', '/' + fp);
+      });
+  }
+
+filepath={{ filepath|tojson }}
+document.querySelectorAll('.file').forEach(el => {
+  el.addEventListener('click', () => fetchContent(el.dataset.path))
+  });
+
+if (filepath != "") {
+fetchContent(filepath);
+}
+</script>
+
+</body>
+</html>
