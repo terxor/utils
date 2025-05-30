@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import os
 import sys
 from flask import Flask, render_template, request, send_from_directory
@@ -8,8 +10,11 @@ app = Flask(__name__)
 ROOT_DIR = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
 
 def build_tree(start_path):
+    ignored_dirs = {'.git'}
     tree = []
     for entry in sorted(os.listdir(start_path)):
+        if entry in ignored_dirs:
+            continue
         full_path = os.path.join(start_path, entry)
         rel_path = os.path.relpath(full_path, ROOT_DIR)
         if os.path.isdir(full_path):
