@@ -3,7 +3,9 @@
 <head>
   <title>Markdown Tree Viewer</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/pygments.css">
 
+  {% if enable_math %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
 
     <!-- The loading of KaTeX is deferred to speed up page rendering -->
@@ -12,6 +14,7 @@
     <!-- To automatically render math in text elements, include the auto-render extension: -->
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
 
+  {% endif %}
 </head>
 <body>
 
@@ -33,6 +36,7 @@
       .then(res => res.text())
       .then(html => {
         document.getElementById('viewer').innerHTML = html;
+  {% if enable_math %}
         renderMathInElement(viewer, {
              delimiters: [
                {left: '$$', right: '$$', display: true},
@@ -40,8 +44,8 @@
                {left: '$', right: '$', display: false},
                {left: '\\(', right: '\\)', display: false}
              ],
-             throwOnError: false
-    });
+             throwOnError: false });
+  {% endif %}
         history.pushState({}, '', '/' + fp);
       });
   }
