@@ -98,7 +98,8 @@ code {
 
 /* Tables */
 .markdown-body table {
-  width: 100%;
+  max-width: 100%;
+  width: auto;
   border-collapse: collapse;
   margin: 1.5rem 0;
   font-size: 0.95rem;
