@@ -6,6 +6,24 @@ from flask import Flask, render_template, request, send_from_directory
 from markupsafe import Markup
 import markdown2
 
+import re
+from urllib.parse import urlparse
+
+def strip_self_links(html: str) -> str:
+    def replacer(match):
+        url = match.group(1)
+        parsed = urlparse(url)
+        # Just show the netloc and path, drop scheme
+        label = parsed.netloc + parsed.path
+        return f'<a href="{url}">{label}</a>'
+
+    return re.sub(
+        r'<a\s+href=["\'](http[s]?://[^"\']+)["\']>\s*\1\s*</a>',
+        replacer,
+        html
+    )
+
+
 class MarkdownViewer:
     def __init__(self, root_dir, enable_math=False, debug=False):
         self.root_dir = os.path.abspath(root_dir)
@@ -60,6 +78,7 @@ class MarkdownViewer:
                 "tables",               # GitHub-style tables
                 "cuddled-lists",        # tighter list/paragraph rendering
             ])
+            html = strip_self_links(html)
             return html  # template will handle math if enabled
 
         @self.app.route('/static/<path:path>')
