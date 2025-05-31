@@ -51,17 +51,18 @@ class TimeOutput:
         self.tz_times: Dict[str, Tuple[str, str, str]] = {}
 
         fmt_lambdas = [
-                lambda d: d.strftime("%Y-%m-%d %H:%M:%S"),
-                lambda d: d.strftime("%Y-%m-%d %H:%M:%S.%f"),
-                lambda d: d.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                lambda d: ('standard', d.strftime("%Y-%m-%d %H:%M:%S")),
+                lambda d: ('micros', d.strftime("%Y-%m-%d %H:%M:%S.%f")),
+                lambda d: ('iso', d.strftime("%Y-%m-%dT%H:%M:%S%z")),
         ]
         self.num_fmt = len(fmt_lambdas)
+        self.fmt_names = [f(dt_utc)[0] for f in fmt_lambdas]
 
         for key, pytz_name in tz_map.items():
             tz = pytz.timezone(pytz_name)
             dt_tz = dt_utc.astimezone(tz)
 
-            self.tz_times[key] = [f(dt_tz) for f in fmt_lambdas]
+            self.tz_times[key] = [f(dt_tz)[1] for f in fmt_lambdas]
 
     def __repr__(self):
         return (
@@ -99,29 +100,27 @@ DATETIME_INPUT_FORMATS = [
 ]
 
 def print_time_output(time_output):
-    # Print epoch timestamps table
-    epoch_rows = [
-        ['Epoch (seconds)', str(time_output.epoch_seconds)],
-        ['Epoch (millis)', str(time_output.epoch_millis)],
-        ['Epoch (micros)', str(time_output.epoch_micros)],
-    ]
-    print(format_table(epoch_rows))
-
-    print()  # Blank line
-
-    # Prepare headers for timezone table
-    # Columns: Format Type + all timezone labels
-    tz_labels = list(time_output.tz_times.keys())
-    headers = tz_labels
-
+    # 3 columns: category, subcategory, value
     rows = []
-    for i in range(time_output.num_fmt):
-        row = []
-        for label in tz_labels:
-            row.append(time_output.tz_times[label][i])
-        rows.append(row)
+    rows.append(['Category', 'Type', 'Value'])
 
-    print(format_table(rows, headers=headers))
+    rows.append(['Epoch', 'seconds', str(time_output.epoch_seconds)])
+    rows.append(['', 'ms', str(time_output.epoch_millis)])
+    rows.append(['', 'micros', str(time_output.epoch_micros)])
+
+    for label in time_output.tz_times.keys():
+        first = True
+        rows.append(['' for i in range(3)])
+        for i in range(time_output.num_fmt):
+            rows.append([
+                (label if first else ''),
+                time_output.fmt_names[i],
+                time_output.tz_times[label][i]
+                ])
+            first = False
+    for r in rows:
+        print(*r, sep=',')
+    # print(format_table(rows))
 
 def detect_epoch_precision(value: int) -> datetime:
     MIN_VALID_EPOCH = 10000000
@@ -169,23 +168,19 @@ def parse_time_input(value: str) -> datetime:
     raise ValueError("Could not parse datetime input.")
 
 
-def format_table(rows, headers=None):
-    data = [headers] + rows if headers else rows
-    col_widths = [max(len(str(cell)) for cell in col) for col in zip(*data)]
-    line = '+'.join('-' * (w + 2) for w in col_widths)
+def format_table(rows):
+    non_empty_rows = [row for row in rows if row]
+    col_widths = [max(len(str(cell)) for cell in col) for col in zip(*non_empty_rows)]
 
     def format_row(row):
-        return '|'.join(f' {cell:<{w}} ' for cell, w in zip(row, col_widths))
+        if len(row) > 0:
+            return ' = '.join(f'{cell:<{w}}' for cell, w in zip(row, col_widths))
+        return ''
 
     result = []
-    if headers:
-        result.extend([line, format_row(headers), line])
-    else:
-        result.append(line)
 
     for row in rows:
         result.append(format_row(row))
-    result.append(line)
 
     return '\n'.join(result)
 
