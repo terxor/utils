@@ -11,3 +11,8 @@ To regenerate syntax css:
 ```
 pygmentize -S default -f html > static/pygments.css
 ```
+
+## TODO
+
+- Fix tables: no wrapping and add horiz scroll
+
