@@ -7,6 +7,4 @@
 
 ### mdviewer
 
-- support expand/contract in directory tree
-- fix blockquotes
 

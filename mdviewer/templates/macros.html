@@ -1,8 +1,12 @@
 {% macro render_tree(tree) %}
-  <ul>
+  <ul class="nested">
   {% for item in tree %}
     {% if item.type == 'directory' %}
-      <li><strong>{{ item.name }}</strong>{{ render_tree(item.children) }}</li>
+      <li class="toggle">
+        <span class="dir-label">{{ item.name }}</span>
+        <span class="dir-indicator">(+)</span>
+        {{ render_tree(item.children) }}
+      </li>
     {% elif item.type == 'file' %}
       <li class="file" data-path="{{ item.path }}">{{ item.name }}</li>
     {% endif %}
