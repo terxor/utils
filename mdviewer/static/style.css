@@ -82,7 +82,7 @@ pre {
   border-left: 2px solid #9EC6F3;
 
   /* for bg change on copy */
-  transition: background-color 0.2s ease-in-out;
+  transition: background-color 0.15s ease-in-out;
 }
 
 pre.highlight {
@@ -118,13 +118,15 @@ code {
 }
 
 .markdown-body th {
-  background-color: #f5f5f5;
+  background-color: #FBF8FF;
   font-weight: 600;
   color: #333;
 }
 
 .markdown-body tr:nth-child(even) {
-  background-color: #fafafa;
+  background-color: #f8f3ff;
+  background-color: #FBF8FF;
+  background-color: #FDFCFF;
 }
 
 /* Horizontal rule */
@@ -136,5 +138,5 @@ code {
 }
 
 pre.copied {
-  background-color: #E8F9FF;
+  background-color: #ECF4FD;
 }
