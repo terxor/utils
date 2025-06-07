@@ -1,28 +1,25 @@
 #!/usr/bin/python3
 
 import os
-import sys, argparse
-from flask import Flask, render_template, request, send_from_directory
+import argparse
+from flask import Flask, render_template, request, send_from_directory, jsonify, abort
 from markupsafe import Markup
 import markdown2
-
 import re
 from urllib.parse import urlparse
+from fuzzy_search import FuzzySearch
 
 def strip_self_links(html: str) -> str:
     def replacer(match):
         url = match.group(1)
         parsed = urlparse(url)
-        # Just show the netloc and path, drop scheme
         label = parsed.netloc + parsed.path
         return f'<a href="{url}">{label}</a>'
-
     return re.sub(
         r'<a\s+href=["\'](http[s]?://[^"\']+)["\']>\s*\1\s*</a>',
         replacer,
         html
     )
-
 
 class MarkdownViewer:
     def __init__(self, root_dir, enable_math=False, debug=False):
@@ -30,7 +27,12 @@ class MarkdownViewer:
         self.enable_math = enable_math
         self.debug = debug
         self.app = Flask(__name__)
+        self.fuzzy_search = FuzzySearch()
         self.setup_routes()
+        self.index_files()
+
+    def index_files(self):
+        self.fuzzy_search.index_directory(self.root_dir)
 
     def build_tree(self, start_path):
         ignored_dirs = {'.git', '__pycache__'}
@@ -41,11 +43,13 @@ class MarkdownViewer:
             full_path = os.path.join(start_path, entry)
             rel_path = os.path.relpath(full_path, self.root_dir)
             if os.path.isdir(full_path):
-                tree.append({
-                    'type': 'directory',
-                    'name': entry,
-                    'children': self.build_tree(full_path)
-                })
+                children = self.build_tree(full_path)
+                if children:
+                    tree.append({
+                        'type': 'directory',
+                        'name': entry,
+                        'children': children
+                    })
             elif entry.endswith('.md'):
                 tree.append({
                     'type': 'file',
@@ -72,18 +76,37 @@ class MarkdownViewer:
             with open(abs_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             html = markdown2.markdown(content, extras=[
-                "fenced-code-blocks",   # for triple backticks
-                "code-friendly",        # don't mangle code indentation
+                "fenced-code-blocks",
+                "code-friendly",
                 "code-color",
-                "tables",               # GitHub-style tables
-                "cuddled-lists",        # tighter list/paragraph rendering
+                "tables",
+                "cuddled-lists",
             ])
             html = strip_self_links(html)
-            return html  # template will handle math if enabled
+            return html
 
         @self.app.route('/static/<path:path>')
         def send_static(path):
             return send_from_directory('static', path)
+
+        @self.app.route('/search', methods=['GET'])
+        def search():
+            query = request.args.get('query', '')
+            if not query:
+                return jsonify([])
+            words = [w for w in query.strip().split() if w]
+            results = self.fuzzy_search.context_search(words)
+            return jsonify(results)
+
+        @self.app.route('/refresh_index', methods=['POST'])
+        def refresh_index():
+            self.index_files()
+            return jsonify({"message": "Index refreshed successfully."})
+
+        @self.app.route('/api/tree')
+        def api_tree():
+            tree = self.build_tree(self.root_dir)
+            return jsonify(tree)
 
     def run(self):
         self.app.run(debug=self.debug)

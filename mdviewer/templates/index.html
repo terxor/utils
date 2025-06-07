@@ -7,161 +7,51 @@
   <link rel="stylesheet" href="/static/pygments.css">
 
   {% if enable_math %}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
-
-    <!-- The loading of KaTeX is deferred to speed up page rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
-
-    <!-- To automatically render math in text elements, include the auto-render extension: -->
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
-
   {% endif %}
 </head>
 <body>
 
-    <div id="sidebar">
-        {% from "macros.html" import render_tree %}
 
-
-<ul class="dir-tree">
-  <li class="toggle root">
-    <span class="dir-label">Root</span>
-    <span class="dir-indicator">(+)</span>
-    {{ render_tree(tree) }}
-  </li>
-</ul>
-
+  <div class="sidebar">
+    <div id="global-search-bar" style="margin: 1em; position: relative;">
+      <input type="text" id="global-search-input" placeholder="Search..." autocomplete="off" style="width: 90%;">
     </div>
-
-    <div id="content">
-      <div class="markdown-body">
-        <div id="viewer">Select a Markdown file to view</div>
-      </div>
+    <div id="dir-tree-root">
+        <ul class="dir-tree"></ul>
     </div>
+  </div>
 
+  <div class="content">
+    <div id="markdown-body">
+      Select a Markdown file to view
+    </div>
+  </div>
 
-<script>
+  <div class="sidebar">
+    <div id="toc-container"></div>
+  </div>
 
-const updateIndicators = () => {
-  document.querySelectorAll('.dir-tree .toggle').forEach(dir => {
-    const children = dir.querySelectorAll(':scope > .nested > .toggle');
-    const indicator = dir.querySelector(':scope > .dir-indicator');
-    const allExpanded = Array.from(children).every(child => child.classList.contains('active'));
-    const anyChild = children.length > 0;
+  <!-- Only keep this floating panel, outside of #dir-sidebar -->
+  <div id="global-search-results"
+       style="display:none; position:absolute; left:50%; top:70px; transform:translateX(-50%); background:#fff; border:1px solid #bbb; box-shadow:0 4px 24px #0002; border-radius:8px; z-index:1000; min-width:400px; max-width:1200px; width:80vw; max-height:60vh; overflow:auto;">
+    <div style="display:flex; border-bottom:1px solid #eee;">
+      <div style="flex:1; padding:0.5em 1em; font-weight:bold;">Files</div>
+      <div style="flex:3; padding:0.5em 1em; font-weight:bold;">Content</div>
+    </div>
+    <div style="display:flex;">
+      <ul id="file-search-results" style="flex:1; margin:0; padding:0.5em 1em; list-style:none; max-height:50vh; overflow:auto;"></ul>
+      <ul id="content-search-results" style="flex:3; margin:0; padding:0.5em 1em; list-style:none; max-height:50vh; overflow:auto;"></ul>
+    </div>
+  </div>
 
-    if (indicator) {
-      indicator.textContent = (anyChild && allExpanded) || (!anyChild && dir.classList.contains('active'))
-        ? '(-)'
-        : '(+)';
-    }
-  });
-};
-
-document.addEventListener('DOMContentLoaded', function () {
-
-  // Clicking dir-label toggles immediate children
-  document.querySelectorAll('.dir-tree .dir-label').forEach(label => {
-    label.addEventListener('click', function (e) {
-      const dir = this.closest('.toggle');
-      dir.classList.toggle('active');
-      updateIndicators();
-      e.stopPropagation();
-    });
-  });
-
-  // Clicking dir-indicator toggles entire subtree
-  document.querySelectorAll('.dir-tree .dir-indicator').forEach(indicator => {
-    indicator.addEventListener('click', function (e) {
-      const dir = this.closest('.toggle');
-      const shouldExpand = !dir.classList.contains('active');
-
-      // Apply to self and all nested .toggle elements
-      dir.classList.toggle('active', shouldExpand);
-      dir.querySelectorAll('.toggle').forEach(child => {
-        child.classList.toggle('active', shouldExpand);
-      });
-
-      updateIndicators();
-      e.stopPropagation();
-    });
-  });
-
-  updateIndicators();
-});
-
-
-// Toggle all from the root’s (all) button
-document.querySelectorAll('.all-toggle').forEach(btn => {
-  btn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    const root = this.closest('.toggle');
-    const shouldExpand = !root.classList.contains('active');
-
-    // Toggle root and all descendants
-    root.classList.toggle('active', shouldExpand);
-    root.querySelectorAll('.toggle').forEach(t => {
-      t.classList.toggle('active', shouldExpand);
-    });
-
-    updateIndicators();
-  });
-});
-
-  // Run once on load to set initial indicators
-  updateIndicators();
-
-const genCopyButtons = () => {
-  // Select all <pre><code> blocks generated by markdown2
-  document.querySelectorAll("pre > code").forEach(codeBlock => {
-    const pre = codeBlock.parentNode;
-
-    pre.addEventListener("click", () => {
-      const selection = window.getSelection();
-      if (selection && selection.toString().length > 0) {
-        // User is selecting text — don't copy
-        return;
-      }
-      navigator.clipboard.writeText(codeBlock.innerText).then(() => {
-        // Add highlight class
-        pre.classList.add("copied");
-        // Remove after 1.5 seconds
-        setTimeout(() => pre.classList.remove("copied"), 400);
-      });
-    });
-  });
-}
-
-
-  const fetchContent = (fp) => {
-    fetch('/content?file=' + encodeURIComponent(fp))
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById('viewer').innerHTML = html;
-  {% if enable_math %}
-        renderMathInElement(viewer, {
-             delimiters: [
-               {left: '$$', right: '$$', display: true},
-               {left: '\\[', right: '\\]', display: true},
-               {left: '$', right: '$', display: false},
-               {left: '\\(', right: '\\)', display: false}
-             ],
-             throwOnError: false });
-  {% endif %}
-        history.pushState({}, '', '/' + fp);
-        document.title = fp;
-        genCopyButtons()
-      });
-  }
-
-filepath={{ filepath|tojson }}
-document.querySelectorAll('.file').forEach(el => {
-  el.addEventListener('click', () => fetchContent(el.dataset.path))
-  });
-
-if (filepath != "") {
-fetchContent(filepath);
-}
-</script>
-
+  <script>
+    filepath={{ filepath|tojson }}
+    enable_math={{ enable_math|tojson }}
+  </script>
+  <script src="/static/highlight.js"></script>
+  <script src="/static/script.js"></script>
 </body>
 </html>
