@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-  <title>Markdown Tree Viewer</title>
+  <title>mdviewer</title>
   <link rel="icon" href="/static/favicon.ico">
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/pygments.css">
@@ -10,14 +10,18 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+    <script>
+      filepath={{ filepath|tojson }}
+      enable_math={{ enable_math|tojson }}
+    </script>
   {% endif %}
 </head>
 <body>
 
 
   <div class="sidebar">
-    <div id="global-search-bar" style="margin: 1em; position: relative;">
-      <input type="text" id="global-search-input" placeholder="Search..." autocomplete="off" style="width: 90%;">
+    <div id="search-bar">
+      <input type="text" id="search-input" placeholder="Search" autocomplete="off">
     </div>
     <div id="dir-tree-root">
         <ul class="dir-tree"></ul>
@@ -28,29 +32,24 @@
     <div id="markdown-body">
       Select a Markdown file to view
     </div>
+    <div class="scroll-spacer"></div>
   </div>
 
   <div class="sidebar">
     <div id="toc-container"></div>
   </div>
 
-  <!-- Only keep this floating panel, outside of #dir-sidebar -->
-  <div id="global-search-results"
-       style="display:none; position:absolute; left:50%; top:70px; transform:translateX(-50%); background:#fff; border:1px solid #bbb; box-shadow:0 4px 24px #0002; border-radius:8px; z-index:1000; min-width:400px; max-width:1200px; width:80vw; max-height:60vh; overflow:auto;">
-    <div style="display:flex; border-bottom:1px solid #eee;">
-      <div style="flex:1; padding:0.5em 1em; font-weight:bold;">Files</div>
-      <div style="flex:3; padding:0.5em 1em; font-weight:bold;">Content</div>
+  <div id="search-results">
+    <div class="search-header">
+      <div class="search-column-file">Files</div>
+      <div class="search-column-content">Content</div>
     </div>
-    <div style="display:flex;">
-      <ul id="file-search-results" style="flex:1; margin:0; padding:0.5em 1em; list-style:none; max-height:50vh; overflow:auto;"></ul>
-      <ul id="content-search-results" style="flex:3; margin:0; padding:0.5em 1em; list-style:none; max-height:50vh; overflow:auto;"></ul>
+    <div class="search-body">
+      <ul class="search-column-file" id="search-results-file"></ul>
+      <ul class="search-column-content" id="search-results-content"></ul>
     </div>
   </div>
 
-  <script>
-    filepath={{ filepath|tojson }}
-    enable_math={{ enable_math|tojson }}
-  </script>
   <script src="/static/highlight.js"></script>
   <script src="/static/script.js"></script>
 </body>

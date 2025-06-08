@@ -20,9 +20,6 @@ const CONSTANTS = {
 
 function renderTreeHTML(tree, parentUl, depth = 0) {
   tree.forEach(item => {
-    // Each item should have a name and an onClick handler
-    // and whether it is expanded or collapsed
-    // and optionally children
     if (!item.name || typeof item.onClick !== 'function') {
       console.error("Invalid tree item:", item);
       return;
@@ -40,7 +37,28 @@ function renderTreeHTML(tree, parentUl, depth = 0) {
     entry.textContent = item.name;
     entry.style.setProperty('--tree-depth', depth);
 
+    // Revert: Always allow clicking, just highlight current file
+    if (
+      item.dataPath &&
+      typeof filepath !== "undefined" &&
+      filepath !== "" &&
+      item.dataPath === filepath
+    ) {
+      entry.classList.add('current-file');
+      entry.setAttribute('aria-current', 'page');
+      // No pointerEvents or opacity changes
+    }
     entry.addEventListener('click', item.onClick);
+
+    // Set data-path for file entries
+    if (item.dataPath) {
+      entry.setAttribute('data-path', item.dataPath);
+    }
+
+    // Set href for TOC entries
+    if (item.href) {
+      entry.setAttribute('href', item.href);
+    }
 
     li.appendChild(entry);
 
@@ -82,11 +100,12 @@ function buildTOCTree(headings) {
         e.preventDefault();
         const target = document.getElementById(h.id);
         if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           addTempHighlight(target, CONSTANTS.TOC_HIGHLIGHT_DURATION, 300);
         }
       },
-      collapsed: false
+      collapsed: false,
+      href: `#${h.id}` // Add href for TOC highlighting
     };
     while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
     stack[stack.length - 1].children.push(node);
@@ -94,6 +113,68 @@ function buildTOCTree(headings) {
   });
 
   return root;
+}
+
+// Helper to expand and highlight the current file in the directory tree
+function highlightCurrentFileInTree(filepath) {
+  const root = document.getElementById('dir-tree-root');
+  if (!root) return;
+  // Remove previous highlights
+  root.querySelectorAll('.tree-entry.active').forEach(el => el.classList.remove('active'));
+
+  // Find the file entry
+  const fileEntry = root.querySelector(`.tree-entry[data-path="${filepath}"]`);
+  if (fileEntry) {
+    fileEntry.classList.add('active');
+    // Expand all parent directories
+    let li = fileEntry.closest('li');
+    while (li) {
+      li.classList.remove(CSS_CLASS.TREE_COLLAPSED);
+      li = li.parentElement.closest('li');
+    }
+    // Scroll into view if not visible
+    fileEntry.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+}
+
+// Helper to highlight the TOC entry for the current scroll position
+function highlightCurrentTOCOnScroll() {
+  const headings = Array.from(document.querySelectorAll('#markdown-body h1, #markdown-body h2, #markdown-body h3, #markdown-body h4, #markdown-body h5, #markdown-body h6'));
+  const tocRoot = document.getElementById('toc-container');
+  if (!headings.length || !tocRoot) return;
+
+  tocRoot.querySelectorAll('.tree-entry.active').forEach(el => el.classList.remove('active'));
+
+  let current = headings[0];
+  const scrollY = window.scrollY || window.pageYOffset;
+  const threshold = 40; // px from top
+
+  for (const h of headings) {
+    const hTop = h.getBoundingClientRect().top + scrollY;
+    if (hTop - scrollY <= threshold) {
+      current = h;
+    } else {
+      break;
+    }
+  }
+
+  if (current && current.id) {
+    const tocEntry = tocRoot.querySelector(`.tree-entry[href="#${current.id}"]`);
+
+    if (tocEntry) {
+      tocEntry.classList.add('active');
+      // Only scroll if not fully visible in the viewport
+      const entryRect = tocEntry.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      if (
+        entryRect.top < 0 ||
+        entryRect.bottom > viewportHeight
+      ) {
+        tocEntry.scrollIntoView({ block: "center", behavior: "auto" });
+      }
+    }
+
+  }
 }
 
 function enrichDirTree(tree) {
@@ -114,10 +195,10 @@ function enrichDirTree(tree) {
         ...item,
         onClick: function(e) {
           fetchContent(item.path, "");
-          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           e.stopPropagation();
         },
-        collapsed: false // Files are not collapsible
+        collapsed: false, // Files are not collapsible
+        dataPath: item.path // Add this for later use
       };
     }
   });
@@ -131,7 +212,6 @@ function generateTOC() {
 
   const headings = viewer.querySelectorAll('h1, h2, h3, h4, h5, h6');
   if (!headings.length) {
-    tocContainer.innerHTML = '<div style="padding:1em;color:#888;">No headings found</div>';
     return;
   }
   const tocTree = buildTOCTree(headings);
@@ -162,8 +242,18 @@ const fetchContent = (fp, highlightWord, lineno, contextBlock) => {
   fetch('/content?file=' + encodeURIComponent(fp))
     .then(res => res.text())
     .then(html => {
+
       const viewer = document.getElementById('markdown-body');
       viewer.innerHTML = html;
+
+      if (highlightWord === undefined || highlightWord === null || highlightWord === "") {
+        highlightWord = ""; // Default to empty string if not provided
+        // Wait for DOM update, then scroll to top
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        });
+      }
+
       if (enable_math) {
         renderMathInElement(viewer, {
           delimiters: [
@@ -179,6 +269,7 @@ const fetchContent = (fp, highlightWord, lineno, contextBlock) => {
       document.title = fp;
       genCopyButtons();
       generateTOC();
+      highlightCurrentFileInTree(fp);
 
       // 1. Highlight all query words
       if (highlightWord) highlightWordInViewer(highlightWord, contextBlock);
@@ -199,10 +290,10 @@ function highlightMatches(text, query) {
 
 // Unified search: searches both file names and content, but does NOT touch the directory tree display
 function setupUnifiedSearch() {
-  const input = document.getElementById('global-search-input');
-  const resultsPanel = document.getElementById('global-search-results');
-  const fileResults = document.getElementById('file-search-results');
-  const contentResults = document.getElementById('content-search-results');
+  const input = document.getElementById('search-input');
+  const resultsPanel = document.getElementById('search-results');
+  const fileResults = document.getElementById('search-results-file');
+  const contentResults = document.getElementById('search-results-content');
   let debounceTimer = null;
   const CONTEXT_BLOCK_SIZE = 5; // Number of lines in a context block
 
@@ -313,56 +404,6 @@ function setupUnifiedSearch() {
   });
 }
 
-// Highlight a word in the viewer
-/*
-function highlightWordInViewer(query) {
-  if (!query) return;
-  const viewer = document.getElementById('markdown-body');
-  if (!viewer) return;
-  const words = query
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  if (words.length === 0) return;
-  const regex = new RegExp(`(${words.join('|')})`, 'gi');
-
-  function walk(node) {
-    if (node.nodeType === 3) { // Text node
-      const frag = document.createDocumentFragment();
-      let lastIdx = 0;
-      let match;
-      regex.lastIndex = 0;
-      const text = node.nodeValue;
-      while ((match = regex.exec(text)) !== null) {
-        if (match.index > lastIdx) {
-          frag.appendChild(document.createTextNode(text.slice(lastIdx, match.index)));
-        }
-        const mark = document.createElement('span');
-        mark.textContent = match[0];
-        addTempHighlight(mark, 4000, 500);
-        frag.appendChild(mark);
-        lastIdx = regex.lastIndex;
-      }
-      if (lastIdx < text.length) {
-        frag.appendChild(document.createTextNode(text.slice(lastIdx)));
-      }
-      node.parentNode.replaceChild(frag, node);
-    } else if (node.nodeType === 1 && node.childNodes && !['SCRIPT', 'STYLE', 'SPAN'].includes(node.tagName)) {
-      // Don't highlight inside <script>, <style>, or already highlighted <span>
-      Array.from(node.childNodes).forEach(walk);
-    }
-  }
-
-  walk(viewer);
-
-  // Scroll to first match
-  const first = viewer.querySelector(`.${CSS_CLASS.TEMP_HIGHLIGHT}`);
-  if (first) {
-    first.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-}
-*/
-
 // Load and render directory tree from API
 function loadAndRenderTree() {
   fetch('/api/tree')
@@ -375,8 +416,16 @@ function loadAndRenderTree() {
       tree = enrichDirTree(tree);
       renderTreeHTML(tree, ul);
       root.appendChild(ul);
+      if (typeof filepath !== "undefined" && filepath !== "") {
+        highlightCurrentFileInTree(filepath);
+      }
     });
 }
+
+// Listen for scroll to highlight current TOC entry
+window.addEventListener('scroll', () => {
+  highlightCurrentTOCOnScroll();
+});
 
 // Initialize everything on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
