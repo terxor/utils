@@ -57,6 +57,11 @@ class MarkdownViewer:
                     'path': rel_path
                 })
         return tree
+    
+    def clean_math(self, content):
+        # Within $$, merge all to same line and escape backslashes again
+        content = re.sub(r'\$\$(.*?)\$\$', lambda m: '$$' + m.group(1).replace('\\', '\\\\').replace('\n', ' ') + '$$', content, flags=re.DOTALL)
+        return content
 
     def setup_routes(self):
         @self.app.route('/', defaults={'filepath': ''})
@@ -75,6 +80,8 @@ class MarkdownViewer:
                 abort(403)
             with open(abs_path, 'r', encoding='utf-8') as f:
                 content = f.read()
+            if self.enable_math:
+                content = self.clean_math(content)
             html = markdown2.markdown(content, extras=[
                 "fenced-code-blocks",
                 "code-friendly",

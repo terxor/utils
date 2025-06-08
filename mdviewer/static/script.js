@@ -242,6 +242,7 @@ const fetchContent = (fp, highlightWord, lineno, contextBlock) => {
   fetch('/content?file=' + encodeURIComponent(fp))
     .then(res => res.text())
     .then(html => {
+      console.time('renderMarkdown');
 
       const viewer = document.getElementById('markdown-body');
       viewer.innerHTML = html;
@@ -273,6 +274,8 @@ const fetchContent = (fp, highlightWord, lineno, contextBlock) => {
 
       // 1. Highlight all query words
       if (highlightWord) highlightWordInViewer(highlightWord, contextBlock);
+
+      console.timeEnd('renderMarkdown');
     });
 };
 
@@ -342,7 +345,7 @@ function setupUnifiedSearch() {
               li.innerHTML = `<span class="file" data-path="${item.path}">${highlightMatches(item.path, query)}</span>`;
               li.style.cursor = 'pointer';
               li.onclick = () => {
-                fetchContent(item.path, query); // No context block for file name search
+                fetchContent(item.path, ""); // No context block for file name search
                 resultsPanel.style.display = 'none';
                 input.value = '';
               };

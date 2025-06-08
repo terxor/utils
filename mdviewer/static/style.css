@@ -9,8 +9,49 @@ body {
   background-color: #f0f2f5;
   margin: 0;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   box-sizing: border-box;
+}
+
+.layout3col {
+  display: grid;
+  grid-template-columns: 1fr 1000px 1fr;
+  width: 100vw;
+  min-height: 100vh;
+}
+
+.layout3col-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  align-self: start;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
+  background: #f0f2f5;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.layout3col-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  max-width: 100vw;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/* Prevent sidebar content from forcing sidebar wider */
+.layout3col-sidebar * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 .sidebar {
@@ -24,22 +65,42 @@ body {
   box-sizing: border-box;
 }
 
-.content {
-  flex: 0 0 1000px;
-  max-width: 1000px;
-  min-width: 0;
-  min-height: 100vh;
+.sidebar-header {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 2rem;
-  box-sizing: border-box;
-  background: transparent;
+  gap: 0.7em;
+  position: sticky;
+  background: #f0f2f5;
+  padding: 1em 0;
+  border-bottom: 1px solid #e3e8ee;
+  flex-shrink: 0;
 }
-.content .scroll-spacer {
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.content {
+  box-sizing: border-box;
+  padding: 2rem;
+  width: 100%;
+}
+
+.scroll-spacer {
   height: 90vh;
   background: transparent;
   pointer-events: none;
+}
+
+#dir-tree-root {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 #markdown-body {
@@ -112,8 +173,10 @@ body {
 }
 
 #search-bar {
-  margin: 1em;
-  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 #search-bar #search-input {
   width: 100%;
@@ -259,6 +322,15 @@ body {
 }
 #search-results .search-column-content {
   flex: 3;
+}
+
+.katex > .katex-html {
+  white-space: normal;
+}
+
+.katex .base {
+  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
 /*# sourceMappingURL=style.css.map */

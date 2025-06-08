@@ -1,6 +1,6 @@
 function highlightWordInViewer(query, context) {
-  console.log('highlightWordInViewer query:', query);
-  console.log('highlightWordInViewer context:', context);
+  // console.log('highlightWordInViewer query:', query);
+  // console.log('highlightWordInViewer context:', context);
   if (!query) return;
   const viewer = document.getElementById('markdown-body');
   if (!viewer) return;
@@ -16,8 +16,8 @@ function highlightWordInViewer(query, context) {
     ? context.replace(/[^\w\s]|_/g, '').toLowerCase().split(/\s+/).filter(Boolean)
     : [];
 
-  console.log('searchWords:', searchWords);
-  console.log('contextWords:', contextWords);
+  // console.log('searchWords:', searchWords);
+  // console.log('contextWords:', contextWords);
 
   // Gather all blocks
   let blocks = Array.from(viewer.querySelectorAll(
@@ -34,7 +34,7 @@ function highlightWordInViewer(query, context) {
     const blockNorms = blocks.map(
       b => b.innerText.replace(/[^\w\s]|_/g, '').toLowerCase().split(/\s+/).filter(Boolean)
     );
-    console.log('blockNorms:', blockNorms);
+    // console.log('blockNorms:', blockNorms);
     for (let start = 0; start < blocks.length; ++start) {
       let joined = [];
       for (let end = start; end < Math.min(blocks.length, start + maxWindow); ++end) {
@@ -55,9 +55,9 @@ function highlightWordInViewer(query, context) {
     blocks = [viewer];
   }
 
-  console.log('bestWindow:', bestWindow);
-  console.log('bestScore:', bestScore);
-  console.log('blocks:', blocks.map(b => b.innerText.trim()));
+  // console.log('bestWindow:', bestWindow);
+  // console.log('bestScore:', bestScore);
+  // console.log('blocks:', blocks.map(b => b.innerText.trim()));
 
   // Highlight search words in the best window
   blocks.forEach(block => {

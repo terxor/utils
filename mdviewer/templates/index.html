@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>mdviewer</title>
+  <!-- Favicon: #1976d2 on white bg, Font: Graduate -->
   <link rel="icon" href="/static/favicon.ico">
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/pygments.css">
@@ -17,27 +18,33 @@
   {% endif %}
 </head>
 <body>
-
-
-  <div class="sidebar">
-    <div id="search-bar">
-      <input type="text" id="search-input" placeholder="Search" autocomplete="off">
+<div class="layout3col">
+  <div class="layout3col-sidebar">
+    <!-- Place your directory tree/sidebar header here -->
+    <div class="sidebar-header">
+      <img src="/static/logo.png" alt="Logo" class="app-logo" width="28" height="28">
+      <div id="search-bar">
+        <input type="text" id="search-input" placeholder="Search" autocomplete="off">
+      </div>
     </div>
     <div id="dir-tree-root">
-        <ul class="dir-tree"></ul>
+      <ul class="dir-tree"></ul>
     </div>
   </div>
-
-  <div class="content">
-    <div id="markdown-body">
-      Select a Markdown file to view
+  <div class="layout3col-center">
+    <!-- Place your markdown/content here -->
+    <div class="content">
+      <div id="markdown-body">
+        Select a file or search
+      </div>
+      <div class="scroll-spacer"></div>
     </div>
-    <div class="scroll-spacer"></div>
   </div>
-
-  <div class="sidebar">
+  <div class="layout3col-sidebar">
+    <!-- Place your TOC/sidebar header here -->
     <div id="toc-container"></div>
   </div>
+</div>
 
   <div id="search-results">
     <div class="search-header">
