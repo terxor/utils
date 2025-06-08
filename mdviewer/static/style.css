@@ -171,6 +171,14 @@ body {
   margin: 1.5rem 0;
   opacity: 0.5;
 }
+#markdown-body blockquote {
+  display: block;
+  margin: 16px;
+  padding: 1px 16px;
+  background: #fdfaf6;
+  border-left: 3px solid #e6b2ba;
+  color: #444;
+}
 
 #search-bar {
   flex: 1;
@@ -184,7 +192,6 @@ body {
   font-size: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: border-color 0.15s ease-in-out;
 }
 #search-bar #search-input:focus {

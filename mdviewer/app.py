@@ -59,8 +59,14 @@ class MarkdownViewer:
         return tree
     
     def clean_math(self, content):
-        # Within $$, merge all to same line and escape backslashes again
-        content = re.sub(r'\$\$(.*?)\$\$', lambda m: '$$' + m.group(1).replace('\\', '\\\\').replace('\n', ' ') + '$$', content, flags=re.DOTALL)
+        # Merge all lines inside $$...$$, remove leading > and whitespace from each line
+        def replacer(m):
+            inner = m.group(1)
+            # Remove leading > and spaces from each line
+            lines = [re.sub(r'^\s*>?\s?', '', line) for line in inner.splitlines()]
+            merged = ' '.join(lines)
+            return '$$' + merged.replace('\\', '\\\\') + '$$'
+        content = re.sub(r'\$\$(.*?)\$\$', replacer, content, flags=re.DOTALL)
         return content
 
     def setup_routes(self):
