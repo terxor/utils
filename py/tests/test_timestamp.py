@@ -1,8 +1,7 @@
 import unittest
-import os, sys, time
-import csv
+import time
 
-from timestamp import parse_time
+from bench.timestamp import TimeOutput, TimeParser, convert_time_output_to_data_table, parse_time
 
 class TestTimestampParsing(unittest.TestCase):
     def test_day_parse(self):
