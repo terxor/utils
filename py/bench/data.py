@@ -134,4 +134,3 @@ def read_stream(stream: TextIO) -> List[str]:
 def write_to_stream(stream: TextIO, lines: List[str]):
     lines_with_newlines = [f"{line}\n" for line in lines]
     stream.writelines(lines_with_newlines)
-    stream.write("\n")

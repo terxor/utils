@@ -24,11 +24,7 @@ def main(args):
         help="Optional source timezone label (default: UTC). Example: IST, PST"
     )
 
-    parser.add_argument(
-        '--csv',
-        action='store_true', # This action automatically sets the argument to True if the flag is present
-        help='Output the time in CSV format'
-    )
+    parser.add_argument('--csv', action='store_true', help='Output in CSV format')
 
     args = parser.parse_args()
     time_output = parse_time(args.time_value, args.timezone)

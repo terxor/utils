@@ -5,6 +5,7 @@ import csv
 import sqlite3
 import os
 import sys
+from bench.data import DataTableConverter, DataTable, write_to_stream
 
 def load_csv_to_sqlite(cursor, table_name, file_path):
     with open(file_path, newline='', encoding='utf-8') as csvfile:
@@ -24,6 +25,7 @@ def load_csv_to_sqlite(cursor, table_name, file_path):
 def parse_args():
     parser = argparse.ArgumentParser(description="tq - TextQuery over CSVs using SQLite")
     parser.add_argument("bindings_and_query", nargs='+', help="table=csvfile ... SQL")
+    parser.add_argument('--csv', action='store_true', help='Output in CSV format')
     return parser.parse_args()
 
 def main():
@@ -59,12 +61,22 @@ def main():
     try:
         cursor.execute(sql_query)
         rows = cursor.fetchall()
+
         columns = [desc[0] for desc in cursor.description]
 
-        # Output results
-        print(','.join(columns))
+        # Populate a DataTable directly
+        result_table = DataTable(num_columns=len(columns), headers=columns)
         for row in rows:
-            print(','.join(str(col) if col is not None else '' for col in row))
+            # Ensure row elements are converted to Primitive types if necessary for DataTable
+            result_table.add_row([str(col) if col is not None else '' for col in row])
+
+        # Example of using the DataTable (replace with your desired output logic)
+        # For instance, if you want to print it as a Markdown table:
+        if args.csv:
+            write_to_stream(sys.stdout, DataTableConverter.to_csv_lines(result_table))
+        else:
+            write_to_stream(sys.stdout, DataTableConverter.to_markdown_lines(result_table))
+
     except Exception as e:
         print(f"SQL error: {e}")
         sys.exit(1)
