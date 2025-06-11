@@ -105,6 +105,43 @@ tb_first_empty() {
   return 1
 }
 
+tb_list() {
+  for file in "${STANDARD_FILES[@]}"; do
+    path="$tb/$file"
+    [[ ! -s "$path" ]] && continue
+
+    # Read first 3 non-empty lines, strip whitespace, collapse spaces
+    preview=$(head -n 5 "$path" | tr '\n' ' ' | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/ /g')
+
+    # Truncate if longer than 65 characters
+    if (( ${#preview} > 65 )); then
+      preview="${preview:0:62}..."
+    fi
+    lines=$(wc -l $path)
+
+    # Gather metadata
+    line_count=$(wc -l < "$path")
+    char_count=$(wc -m < "$path")
+
+    printf "| ${CYAN}%s${NC} | ${YELLOW}%-12s${NC} | %-65s |\n" "$file" "${line_count}L (${char_count}B)" "$preview"
+  done
+}
+
+tb_non_empty() {
+  local files=()
+  for file in "${STANDARD_FILES[@]}"; do
+    path="$tb/$file"
+    [[ -s "$path" ]] && files+=("$path")
+  done
+
+  if [[ ${#files[@]} -eq 0 ]]; then
+    echo "No non-empty buffers to open."
+    exit 1
+  fi
+
+  ${EDITOR:-vi} "+cd $tb" "${files[@]}"
+}
+
 # Argument parsing
 case "$1" in
   -s|--stats)
@@ -113,6 +150,9 @@ case "$1" in
   -r|--regen)
     tb_regen
     ;;
+  -l|--list)
+    tb_list
+    ;;
   -o|--other)
     tb_other
     ;;
@@ -120,10 +160,18 @@ case "$1" in
     file=$(tb_first_empty) || exit 1
     echo "$file"
     ;;
+  -ne|--nonempty)
+    tb_non_empty
+    ;;
   "" )
     file=$(tb_first_empty) || exit 1
     ${EDITOR:-vi} "+cd $tb" "$file"
     ;;
+  [a-z0-9] )
+      file="$tb/$1"
+      touch "$file"  # Ensure the file exists
+      ${EDITOR:-vi} "+cd $tb" "$file"
+      ;;
   *)
     echo "Unknown option: $1"
     echo "Usage: tb [-s|--stats] [-r|--regen] [-o|--other]"
