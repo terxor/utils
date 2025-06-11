@@ -78,7 +78,7 @@ class DataTableConverter:
 
         # Calculate max width for each column
         # Initialize with header widths
-        col_widths = [len(header) for header in headers]
+        col_widths = [max(3, len(header)) for header in headers]
 
         # Update widths based on actual data rows
         for row in data_rows:
@@ -108,7 +108,7 @@ class DataTableConverter:
     def from_markdown_lines(lines: List[str]) -> DataTable:
         if len(lines) < 2:
             raise ValueError("Invalid markdown input.")
-        headers = [h.strip() for h in lines[0].strip('| \n').split('|')]
+        headers = [cell.strip() for cell in lines[0].split('|')[1:-1]]
         table = DataTable(len(headers), headers)
         for line in lines[2:]:
             if not line.strip(): continue
