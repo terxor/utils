@@ -112,7 +112,7 @@ class DataTableConverter:
         table = DataTable(len(headers), headers)
         for line in lines[2:]:
             if not line.strip(): continue
-            row = [DataTableConverter._parse_cell(cell.strip()) for cell in line.strip('| \n').split('|')]
+            row = [DataTableConverter._parse_cell(cell.strip()) for cell in line.split('|')[1:-1]]
             table.add_row(row)
         return table
 

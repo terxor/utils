@@ -36,10 +36,11 @@ link_binary() {
 }
 
 # Usage: link_binary <relative_path_to_binary> <symlink_name>
-link_binary "py/csv2md.py" "csv2md"
-link_binary "py/md2csv.py" "md2csv"
+link_binary "py/dfx.py" "dfx"
 link_binary "py/textquery.py" "textquery"
 link_binary "py/timestamp.py" "timestamp"
 link_binary "tmpbuf/tb" "tb"
+link_binary "wrappers/csv2md" "csv2md"
+link_binary "wrappers/md2csv" "md2csv"
 
 
