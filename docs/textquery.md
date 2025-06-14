@@ -71,3 +71,29 @@ select * from (
 | 1749672031 | 9     | 240     | 4       |
 
 ********************************************************************************
+
+| ID  | Name    | Category | Value | IsActive |
+| --- | ------- | -------- | ----- | -------- |
+| 1   | Alpha   | Type A   | 23.5  | true     |
+| 2   | Bravo   | Type B   | 15.0  | false    |
+| 3   | Charlie | Type C   | 18.2  | true     |
+| 4   | Delta   | Type A   | 21.9  | false    |
+| 5   | Echo    | Type B   | 16.7  | false    |
+| 6   | Foxtrot | Type C   | 19.4  | false    |
+| 7   | Golf    | Type A   | 20.1  | true     |
+| 8   | Hotel   | Type B   | 22.8  | false    |
+| 9   | India   | Type C   | 17.3  | true     |
+| 10  | Juliett | Type A   | 24.0  | true     |
+
+```
+pragma table_info(T)
+```
+
+| cid | name     | type    | notnull | dflt_value | pk  |
+| --- | -------- | ------- | ------- | ---------- | --- |
+| 0   | ID       | INTEGER | 0       |            | 0   |
+| 1   | Name     | TEXT    | 0       |            | 0   |
+| 2   | Category | TEXT    | 0       |            | 0   |
+| 3   | Value    | REAL    | 0       |            | 0   |
+| 4   | IsActive | INTEGER | 0       |            | 0   |
+

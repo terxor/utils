@@ -4,6 +4,7 @@
 GREY='\033[90m'     # Bright black (actual grey)
 YELLOW='\033[0;33m'
 CYAN='\033[1;36m'
+WHITE='\033[0;37m'
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
 RED='\033[0;31m'
@@ -123,7 +124,7 @@ tb_list() {
     line_count=$(wc -l < "$path")
     char_count=$(wc -m < "$path")
 
-    printf "| ${CYAN}%s${NC} | ${YELLOW}%-12s${NC} | %-65s |\n" "$file" "${line_count}L (${char_count}B)" "$preview"
+    printf " ${CYAN}%s${NC} ${YELLOW}%-12s${NC} => ${WHITE}%-65s${NC}\n" "$file" "(${line_count}L/${char_count}B)" "$preview" >&2
   done
 }
 
