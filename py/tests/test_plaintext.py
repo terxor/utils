@@ -80,11 +80,50 @@ class TestPlainTextConversion(unittest.TestCase):
             ',,',
         ]
         md_lines = [
-            '|     |     |     |',
-            '| --- | --- | --- |',
-            '|     |     |     |',
+            '| col1 | col2 | col3 |',
+            '| ---- | ---- | ---- |',
+            '|      |      |      |',
         ]
-        self._test_two_way_conv(csv_lines, md_lines)
+        # In this case, we expect the headers to be generated
+        # since the CSV does not provide any headers.
+        table = DataTableConverter.from_csv_lines(csv_lines)
+        self.assertEqual(md_lines, DataTableConverter.to_markdown_lines(table))
+
+    def test_null_values(self):
+        csv_lines = [
+            ',,',
+            ',,',
+        ]
+        table = DataTableConverter.from_csv_lines(csv_lines)
+        self.assertEqual(table.size(), (1, 3))
+        self.assertEqual(table.headers, ['col1', 'col2', 'col3'])
+        expected_rows = [
+            [None, None, None],
+        ]
+        self.assertEqual(table.data(), expected_rows)
+
+    def test_uncommon_cases_1(self):
+        csv_lines = [
+            '1,2', # Even though columns are seemingly ints, they are treated as strings
+            '"",  xyz', # Initial empty spaces are trimmed.
+            '"    ",   ', # One is string with multiple spaces, the other is empty
+            'a long sentence, "with a comma, inside quotes"',
+            'true,True',
+            'TRUE,false',
+            '0,0.5',
+        ]
+        table = DataTableConverter.from_csv_lines(csv_lines)
+        self.assertEqual(table.size(), (6, 2))
+        self.assertEqual(table.headers, ['1', '2'])
+        expected_rows = [
+            ['', 'xyz'],
+            ['    ', None],
+            ['a long sentence', 'with a comma, inside quotes'],
+            [True, 'True'],
+            ['TRUE', False],
+            [0, 0.5],
+        ]
+        self.assertEqual(table.data(), expected_rows)
 
 if __name__ == "__main__":
     unittest.main()

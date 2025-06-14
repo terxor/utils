@@ -1,15 +1,32 @@
-from typing import List, Union
+from enum import Enum
+from typing import List, Optional, Union
 from typing import TextIO
+
+class DataType(Enum):
+    BOOL = 1
+    INT = 2
+    FLOAT = 3
+    STR = 4
+    NULL = 5
 
 Primitive = Union[bool, int, float, str]
 
 class DataTable:
-    def __init__(self, num_columns: int, headers: List[str] = None):
+    def __init__(self, num_columns: int, headers: List[Optional[str]] = None):
         if num_columns <= 0:
             raise ValueError("Number of columns must be positive.")
         
         self.num_columns = num_columns
-        self.headers = headers if headers is not None else [''] * num_columns
+
+        if headers is None:
+            self.headers = [f"col{i+1}" for i in range(num_columns)]
+        else:
+            if len(headers) != num_columns:
+                raise ValueError("Length of headers must match number of columns.")
+            self.headers = [
+                h if h is not None else f"col{i+1}"
+                for i, h in enumerate(headers)
+            ]
 
         if len(self.headers) != num_columns:
             raise ValueError("Length of headers must match number of columns.")
@@ -29,7 +46,7 @@ class DataTable:
         if len(row) != self.num_columns:
             raise ValueError("Row length does not match number of columns.")
         for item in row:
-            if not isinstance(item, (bool, int, float, str)):
+            if not isinstance(item, (bool, int, float, str, type(None))):
                 raise TypeError(f"Unsupported data type: {type(item)}")
         self._data.append(row)
 
@@ -48,25 +65,20 @@ class DataTable:
 class DataTableConverter:
     @staticmethod
     def to_csv_lines(table: DataTable) -> List[str]:
-        import csv
-        from io import StringIO
-        output = StringIO()
-        writer = csv.writer(output)
-        writer.writerow(table.headers)
-        writer.writerows(table.data())
-        return output.getvalue().strip().splitlines()
+        lines = [DataTableConverter._to_csv_line(table.headers)]
+        for row in table.data():
+            lines.append(DataTableConverter._to_csv_line(row))
+        return lines
 
     @staticmethod
     def from_csv_lines(lines: List[str]) -> DataTable:
-        import csv
-        reader = csv.reader(lines)
-        rows = list(reader)
-        if not rows:
+        if len(lines) == 0:
             raise ValueError("Empty CSV input.")
-        headers = rows[0]
+        headers = DataTableConverter._parse_csv_line(lines[0])
         table = DataTable(len(headers), headers)
-        for row in rows[1:]:
-            table.add_row([DataTableConverter._parse_cell(cell) for cell in row])
+        for i in range(1, len(lines)):
+            raw = DataTableConverter._parse_csv_line(lines[i])
+            table.add_row([DataTableConverter._parse_cell(field) for field in raw])
         return table
 
     @staticmethod
@@ -80,16 +92,21 @@ class DataTableConverter:
         # Initialize with header widths
         col_widths = [max(3, len(header)) for header in headers]
 
+        # Precompute stringified rows
+        str_rows = [
+            [DataTableConverter._val_to_str(cell) for cell in row]
+            for row in data_rows
+        ]
+
         # Update widths based on actual data rows
-        for row in data_rows:
+        for row in str_rows:
             for i, cell in enumerate(row):
                 # Ensure cell is converted to string for length calculation
-                col_widths[i] = max(col_widths[i], len(str(cell)))
+                col_widths[i] = max(col_widths[i], len(cell))
 
         # Helper to pad cells to column width
-        def pad(cell: Primitive, width: int) -> str:
-            s_cell = str(cell) # Convert cell to string for consistent length calculation and padding
-            return s_cell + " " * (width - len(s_cell))
+        def pad(cell: str, width: int) -> str:
+            return cell + " " * (width - len(cell))
 
         # Build header row
         header_row = "| " + " | ".join(pad(cell, col_widths[i]) for i, cell in enumerate(headers)) + " |"
@@ -99,10 +116,18 @@ class DataTableConverter:
 
         # Build data rows
         lines = [header_row, separator_row]
-        for row in data_rows:
+        for row in str_rows:
             row_str = "| " + " | ".join(pad(cell, col_widths[i]) for i, cell in enumerate(row)) + " |"
             lines.append(row_str)
         return lines
+
+    @staticmethod
+    def _val_to_str(val: Primitive) -> str:
+        if val is None:
+            return ""
+        elif isinstance(val, bool):
+            return "true" if val else "false"
+        return str(val)
 
     @staticmethod
     def from_markdown_lines(lines: List[str]) -> DataTable:
@@ -111,22 +136,90 @@ class DataTableConverter:
         headers = [cell.strip() for cell in lines[0].split('|')[1:-1]]
         table = DataTable(len(headers), headers)
         for line in lines[2:]:
-            if not line.strip(): continue
-            row = [DataTableConverter._parse_cell(cell.strip()) for cell in line.split('|')[1:-1]]
-            table.add_row(row)
+            raw = DataTableConverter._parse_md_line(line)
+            table.add_row([DataTableConverter._parse_cell(field) for field in raw])
         return table
 
     @staticmethod
-    def _parse_cell(cell: str) -> Primitive:
-        if cell.lower() in {"true", "false"}:
-            return cell.lower() == "true"
+    def _parse_cell(cell: Optional[str]) -> Primitive:
+        if cell is None:
+            return None
+        if cell in {"true", "false"}:
+            return cell == "true"
         try:
-            if '.' in cell:
+            if '.' in cell or 'e' in cell.lower():
                 return float(cell)
             return int(cell)
         except ValueError:
             return cell
 
+    @staticmethod
+    def _parse_md_line(line: str) -> List[Optional[str]]:
+        """
+        Parse one Markdown table row, e.g.:
+
+            "| Alice | 30 | |"`
+
+        → ["Alice", "30", None]
+        """
+        # 1) Strip leading/trailing pipe and any surrounding spaces
+        trimmed = line.strip()
+        if trimmed.startswith('|'):
+            trimmed = trimmed[1:]
+        if trimmed.endswith('|'):
+            trimmed = trimmed[:-1]
+
+        # 2) Split on pipes
+        raw_cells = trimmed.split('|')
+
+        # 3) Trim each cell and map empty→None
+        result: List[Optional[str]] = []
+        for cell in raw_cells:
+            c = cell.strip()
+            if c == "":
+                result.append(None)
+            else:
+                result.append(c)
+        return result
+    
+    def _to_csv_line(row: List[Primitive]) -> str:
+        return ','.join([DataTableConverter._val_to_str(cell) for cell in row])
+
+    @staticmethod
+    def _parse_csv_line(line: str) -> List[Optional[str]]:
+        """Parse one CSV line and differentiate between:
+        - `""` (quoted empty string) -> ""
+        - empty field (bare comma) -> None
+        """
+        def get_value(s: str) -> Optional[str]:
+            if s == '':
+                return None
+            return DataTableConverter._strip_surrounding_quotes(s)
+
+        # Manually split the line, respecting quote context
+        raw_fields = []
+        current = ''
+        inside_quote = False
+        for char in line:
+            if char == '"' and not inside_quote:
+                inside_quote = True
+                current += char
+            elif char == '"' and inside_quote:
+                inside_quote = False
+                current += char
+            elif char == ',' and not inside_quote:
+                raw_fields.append(get_value(current.strip()))
+                current = ''
+            else:
+                current += char
+        raw_fields.append(get_value(current.strip()))
+        return raw_fields
+
+    @staticmethod
+    def _strip_surrounding_quotes(s: str) -> str:
+        if len(s) >= 2 and s[0] == s[-1] and s[0] == '"':
+            return s[1:-1]
+        return s
 
 def read_stream(stream: TextIO) -> List[str]:
     return stream.read().splitlines()

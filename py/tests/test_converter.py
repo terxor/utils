@@ -12,16 +12,16 @@ class TestDataTableConverter(unittest.TestCase):
         csv_lines = DataTableConverter.to_csv_lines(self.table)
         expected = [
             "Name,Age,Passed",
-            "Alice,30,True",
-            "Bob,25,False"
+            "Alice,30,true",
+            "Bob,25,false"
         ]
         self.assertEqual(csv_lines, expected)
 
     def test_from_csv_lines(self):
         csv_lines = [
             "Name,Age,Passed",
-            "Charlie,22,True",
-            "Dana,28,False"
+            "Charlie,22,true",
+            "Dana,28,false"
         ]
         table = DataTableConverter.from_csv_lines(csv_lines)
         self.assertEqual(table.headers, ["Name", "Age", "Passed"])
@@ -38,8 +38,8 @@ class TestDataTableConverter(unittest.TestCase):
         expected = [
             "| Name  | Age | Passed |",
             "| ----- | --- | ------ |",
-            "| Alice | 30  | True   |",
-            "| Bob   | 25  | False  |"
+            "| Alice | 30  | true   |",
+            "| Bob   | 25  | false  |"
         ]
         self.assertEqual(md_lines, expected)
 
@@ -47,8 +47,8 @@ class TestDataTableConverter(unittest.TestCase):
         md_lines = [
             "| Name | Age | Passed |",
             "| --- | --- | --- |",
-            "| Charlie | 22 | True |",
-            "| Dana | 28 | False |"
+            "| Charlie | 22 | true |",
+            "| Dana | 28 | false |"
         ]
         table = DataTableConverter.from_markdown_lines(md_lines)
         self.assertEqual(table.headers, ["Name", "Age", "Passed"])

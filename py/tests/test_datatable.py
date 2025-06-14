@@ -10,7 +10,7 @@ class TestDataTable(unittest.TestCase):
 
     def test_initialization_with_default_headers(self):
         table = DataTable(3)
-        self.assertEqual(table.headers, ["", "", ""])
+        self.assertEqual(table.headers, ['col1', 'col2', 'col3'])
 
     def test_invalid_column_number(self):
         with self.assertRaises(ValueError):
