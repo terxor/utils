@@ -44,7 +44,7 @@ class DataTable:
     def add_row(self, row: List[Primitive]):
         """Adds a row to the data table after validation"""
         if len(row) != self.num_columns:
-            raise ValueError("Row length does not match number of columns.")
+            raise ValueError(f"Row length of {row} does not match number of columns (headers: {self.headers}).")
         for item in row:
             if not isinstance(item, (bool, int, float, str, type(None))):
                 raise TypeError(f"Unsupported data type: {type(item)}")
@@ -187,33 +187,41 @@ class DataTableConverter:
 
     @staticmethod
     def _parse_csv_line(line: str) -> List[Optional[str]]:
-        """Parse one CSV line and differentiate between:
-        - `""` (quoted empty string) -> ""
-        - empty field (bare comma) -> None
+        """Parse one CSV line handling:
+        - quoted fields (with commas or escaped quotes)
+        - `""` → empty string
+        - empty field (bare comma) → None
         """
-        def get_value(s: str) -> Optional[str]:
-            if s == '':
-                return None
-            return DataTableConverter._strip_surrounding_quotes(s)
+        fields: List[Optional[str]] = []
+        in_quote = False
+        start_index = 0
+        i = 0
+        while i < len(line):
+            char = line[i]
 
-        # Manually split the line, respecting quote context
-        raw_fields = []
-        current = ''
-        inside_quote = False
-        for char in line:
-            if char == '"' and not inside_quote:
-                inside_quote = True
-                current += char
-            elif char == '"' and inside_quote:
-                inside_quote = False
-                current += char
-            elif char == ',' and not inside_quote:
-                raw_fields.append(get_value(current.strip()))
-                current = ''
-            else:
-                current += char
-        raw_fields.append(get_value(current.strip()))
-        return raw_fields
+            if char == '"':
+                if in_quote:
+                    if i + 1 < len(line) and line[i + 1] == '"':
+                        i += 1
+                    else:
+                        in_quote = False
+                else:
+                    in_quote = True
+            elif char == ',' and not in_quote:
+                fields.append(DataTableConverter._finalize_field(line, start_index, i))
+                start_index = i + 1
+            i += 1
+        fields.append(DataTableConverter._finalize_field(line, start_index, i))
+        return fields
+
+    @staticmethod
+    def _finalize_field(line: str, start: int, end: int) -> Optional[str]:
+        s = line[start:end].strip()
+        print('Finalizing field:', s)
+        if len(s) == 0:
+            return None
+        s = DataTableConverter._strip_surrounding_quotes(s)
+        return s.replace('""', '"')  # Replace escaped quotes with single quotes
 
     @staticmethod
     def _strip_surrounding_quotes(s: str) -> str:

@@ -1,13 +1,9 @@
 #!/usr/bin/python3
 
-import csv
 import sqlite3
-import os
-import sys
-from bench.data import DataTableConverter, DataTable, write_to_stream, read_stream, Primitive
-from typing import List
-from enum import Enum, auto
-from typing import List, Optional, Union
+from bench.data import DataTable
+from enum import Enum
+from typing import List, Optional
 
 import sqlite3
 from typing import Dict, List

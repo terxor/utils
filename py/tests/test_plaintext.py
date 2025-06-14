@@ -102,26 +102,55 @@ class TestPlainTextConversion(unittest.TestCase):
         ]
         self.assertEqual(table.data(), expected_rows)
 
-    def test_uncommon_cases_1(self):
+    def test_uncommon_cases_csv(self):
         csv_lines = [
             '1,2', # Even though columns are seemingly ints, they are treated as strings
             '"",  xyz', # Initial empty spaces are trimmed.
-            '"    ",   ', # One is string with multiple spaces, the other is empty
-            'a long sentence, "with a comma, inside quotes"',
+            '"    ",   ', # Both are strings, second is null effectively
+            '"    ",', # In this case, the second column is null
+            ',', # Both are null
+            'a long sentence   , "with a comma, inside quotes"', # Leading and trailing spaces are trimmed, comma inside quotes is preserved
+            ',"  fully quoted"',
             'true,True',
             'TRUE,false',
-            '0,0.5',
+            '0  , 0.5',
+            'ab""efg,""cd""', # Note that [""cd""] is malformed, but we still parse it as ["cd"]
+            '"x""abc""","""cd"""', # ["""cd"""] is okay - parsed as ["cd"]
         ]
         table = DataTableConverter.from_csv_lines(csv_lines)
-        self.assertEqual(table.size(), (6, 2))
+        self.assertEqual(table.size(), (len(csv_lines) - 1, 2))
         self.assertEqual(table.headers, ['1', '2'])
         expected_rows = [
             ['', 'xyz'],
             ['    ', None],
+            ['    ', None],
+            [None, None],
             ['a long sentence', 'with a comma, inside quotes'],
+            [None, '  fully quoted'],
             [True, 'True'],
             ['TRUE', False],
             [0, 0.5],
+            ['ab"efg', '"cd"'],
+            ['x"abc"', '"cd"'],
+        ]
+        self.assertEqual(table.data(), expected_rows)
+
+    def test_more_weird_quote_cases(self):
+        csv_lines = [
+            ',,',
+            '   "ab""c""d"   , """""x"""""   , "" x "" y "" ',
+            'here is a " string " with quotes at " random " places," ",""""', # stray quotes are just parsed as they are, but ideally should be escaped
+            'here is a "" string "" with quotes at "" random "" places,   ,   ', # here, the quotes are escaped properly
+            '","",""",,', # Look closely at the first part
+        ]
+        table = DataTableConverter.from_csv_lines(csv_lines)
+        self.assertEqual(table.size(), (len(csv_lines) - 1, 3))
+        self.assertEqual(table.headers, ['col1', 'col2', 'col3'])
+        expected_rows = [
+            ['ab"c"d', '""x""', '" x " y "'],
+            ['here is a " string " with quotes at " random " places', ' ', '"'],
+            ['here is a " string " with quotes at " random " places', None, None],
+            [',","', None, None],
         ]
         self.assertEqual(table.data(), expected_rows)
 
