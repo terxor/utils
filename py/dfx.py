@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-from bench.data import DataTableConverter, read_stream, write_to_stream
+from bench.data import CsvFormat, MdFormat, StreamUtils
 
 def main():
     parser = argparse.ArgumentParser(description="Convert CSV to markdown")
@@ -30,14 +30,15 @@ def main():
     )
 
     args = parser.parse_args()
+    input = StreamUtils.read_stream(args.input_file)
     if args.from_format == 'csv':
-      table = DataTableConverter.from_csv_lines(read_stream(args.input_file))
+      table = CsvFormat(input).table
     elif args.from_format == 'md':
-      table = DataTableConverter.from_markdown_lines(read_stream(args.input_file))
+      table = MdFormat(input).table
     else:
       raise ValueError(f"Unsupported format: {args.from_format}")
-    write_to_stream(args.output, DataTableConverter.to_markdown_lines(table) if args.to_format == 'md' else
-        DataTableConverter.to_csv_lines(table))
+    StreamUtils.write_to_stream(args.output, MdFormat(table).format() if args.to_format == 'md' else
+        CsvFormat(table).format())
 
 if __name__ == "__main__":
     main()
