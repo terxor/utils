@@ -29,6 +29,15 @@ def main():
         help="Target format"
     )
 
+    # Additional transforms while conversion
+    parser.add_argument(
+        '--tf-backtick',
+        dest='transform_backtick',
+        type=str,
+        default=None,
+        help="Comma sep list of 1-indexed cols to toggle backtick on"
+    )
+
     args = parser.parse_args()
     input = StreamUtils.read_stream(args.input_file)
     if args.from_format == 'csv':
@@ -37,6 +46,23 @@ def main():
       table = MdFormat(input).table
     else:
       raise ValueError(f"Unsupported format: {args.from_format}")
+
+    # TODO: Refactor to modularize data transforms
+    if args.transform_backtick:
+      cols = [int(x) - 1 for x in args.transform_backtick.split(',')]
+      (nrows, _) = table.size()
+      for i in range(nrows):
+          for c in cols:
+            val = table[i][c]
+            if val is None:
+               continue
+            val = str(val)
+            if val.startswith("`") and val.endswith("`"):
+              res = val[1:-1]
+            else:
+              res = f'`{val}`'
+            table[i][c] = res
+
     StreamUtils.write_to_stream(args.output, MdFormat(table).format() if args.to_format == 'md' else
         CsvFormat(table).format())
 
