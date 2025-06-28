@@ -182,7 +182,7 @@ class MdFormat(DataFormat):
             raise ValueError("Invalid markdown input.")
         return lines[2:]
 
-    def format(self) -> List[str]:
+    def format(self, colors=None) -> List[str]:
         # Get headers and data rows from the DataTable object
         table = self.table
         headers = table.headers
@@ -206,8 +206,11 @@ class MdFormat(DataFormat):
                 col_widths[i] = max(col_widths[i], len(cell))
 
         # Helper to pad cells to column width
-        def pad(cell: str, width: int) -> str:
-            return cell + " " * (width - len(cell))
+        def pad(cell: str, width: int, color = None) -> str:
+            content = cell
+            if color is not None:
+                content = TermColor.colorize(cell, color)
+            return content + " " * (width - len(cell))
 
         # Build header row
         header_row = "| " + " | ".join(pad(cell, col_widths[i]) for i, cell in enumerate(headers)) + " |"
@@ -218,7 +221,7 @@ class MdFormat(DataFormat):
         # Build data rows
         lines = [header_row, separator_row]
         for row in str_rows:
-            row_str = "| " + " | ".join(pad(cell, col_widths[i]) for i, cell in enumerate(row)) + " |"
+            row_str = "| " + " | ".join(pad(cell, col_widths[i], colors[i] if colors is not None and i < len(colors) else None) for i, cell in enumerate(row)) + " |"
             lines.append(row_str)
         return lines
     
@@ -283,3 +286,40 @@ class Parser:
     def _is_made_of_float_chars(s: str) -> bool:
         allowed = {'+', '-', '.', 'e', 'E'}
         return all(c.isdigit() or c in allowed for c in s)
+
+class TermColor:
+    # Class-level color map using ANSI escape codes
+    COLOR_MAP = {
+        'black': '\033[30m',
+        'red': '\033[31m',
+        'green': '\033[32m',
+        'yellow': '\033[33m',
+        'blue': '\033[34m',
+        'magenta': '\033[35m',
+        'cyan': '\033[36m',
+        'white': '\033[37m',
+        'bright_black': '\033[90m',
+        'bright_red': '\033[91m',
+        'bright_green': '\033[92m',
+        'bright_yellow': '\033[93m',
+        'bright_blue': '\033[94m',
+        'bright_magenta': '\033[95m',
+        'bright_cyan': '\033[96m',
+        'bright_white': '\033[97m',
+        'reset': '\033[0m',
+    }
+
+    @staticmethod
+    def colorize(content: str, color = None) -> str:
+        """
+        Returns the content string wrapped in the given color.
+        If color is not found, returns the content unchanged.
+        """
+        if color is None:
+            return content
+        color_code = TermColor.COLOR_MAP.get(color.lower())
+        reset_code = TermColor.COLOR_MAP['reset']
+        if color_code:
+            return f"{color_code}{content}{reset_code}"
+        else:
+            return content  # Fallback if color not found

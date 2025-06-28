@@ -38,6 +38,15 @@ def main():
         help="Comma sep list of 1-indexed cols to toggle backtick on"
     )
 
+    # Additional transforms while conversion
+    parser.add_argument(
+        '--md-colors',
+        dest='md_colors',
+        type=str,
+        default='',
+        help="Comma sep list of colors. Will ignore for missing/extra cols."
+    )
+
     args = parser.parse_args()
     input = StreamUtils.read_stream(args.input_file)
     if args.from_format == 'csv':
@@ -63,7 +72,7 @@ def main():
               res = f'`{val}`'
             table[i][c] = res
 
-    StreamUtils.write_to_stream(args.output, MdFormat(table).format() if args.to_format == 'md' else
+    StreamUtils.write_to_stream(args.output, MdFormat(table).format(args.md_colors.split(',')) if args.to_format == 'md' else
         CsvFormat(table).format())
 
 if __name__ == "__main__":
