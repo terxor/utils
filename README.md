@@ -12,3 +12,7 @@
 - Fix md2csv in case of empty strings, strings with spaces, etc.
 
 - Fix md table gen in case of < 3 chars
+
+- Finalize md color print feature
+- comma in md table content
+
