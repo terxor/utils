@@ -44,5 +44,15 @@ class TestDataTable(unittest.TestCase):
         expected = "Col1\tCol2\n1\t2.5\nText\tTrue"
         self.assertEqual(str(table), expected)
 
+    def test_to_records(self):
+        table = DataTable(2, ["Col1", "Col2"])
+        table.add_row([1, 2.5])
+        table.add_row(["Text", True])
+        expected = [
+            {"Col1": 1, "Col2": 2.5},
+            {"Col1": "Text", "Col2": True}
+        ]
+        self.assertEqual(table.to_records(), expected)
+
 if __name__ == '__main__':
     unittest.main()
