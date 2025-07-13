@@ -43,6 +43,15 @@ class DataTable:
                 raise TypeError(f"Unsupported data type: {type(item)}")
         self._data.append(row)
 
+    def to_records(self):
+        res = []
+        for row in self._data:
+            record = {}
+            for i in range(self.num_columns):
+                record[self.headers[i]] = row[i]
+            res.append(record)
+        return res
+
     def __getitem__(self, index):
         """Allows table[i][j] access via table[i][j] -> table[i][j]"""
         return self._data[index]
