@@ -39,7 +39,7 @@ link_binary() {
 link_binary "py/dfx.py" "dfx"
 link_binary "py/textquery.py" "textquery"
 link_binary "py/timestamp.py" "timestamp"
-link_binary "tmpbuf/tb" "tb"
+link_binary "py/tmpbuf.py" "tb"
 link_binary "wrappers/csv2md" "csv2md"
 link_binary "wrappers/md2csv" "md2csv"
 
