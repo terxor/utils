@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import stat
 import sys
 import subprocess
 import re
@@ -19,60 +20,75 @@ tb_path.mkdir(parents=True, exist_ok=True)
 
 STANDARD_FILES = list(string.ascii_lowercase + string.digits)
 
-def get_stats(fname, preview_len = 50):
+def get_file_size(fpath):
+    path = Path(fpath)
+    if not path.is_file():
+        return 0
+    return path.stat().st_size
+
+def get_stats(fname, preview_len=50):
     """
-    Returns a tuple (num_lines, num_chars, preview) for the given file.
-    - If the file doesn't exist or is empty, returns (0, 0, "").
-    - The preview is a collapsed version of the file contents with at most L characters.
+    Returns (num_chars, preview) for the given file.
+    - num_chars is file size in bytes.
+    - preview is a collapsed snippet of up to preview_len chars.
     """
-    path = Path(os.path.join(tb_path, fname))
-    if not path.is_file() or path.stat().st_size == 0:
-        return (0, 0, "")
+    fpath = os.path.join(tb_path, fname)
+    size = get_file_size(fpath)
+    if size == 0:
+        return (0, "")
 
     try:
-        with path.open('r', encoding='utf-8', errors='ignore') as f:
-            lines = f.readlines()
-            num_lines = len(lines)
-            num_chars = sum(len(line) for line in lines)
+        with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
+            chunk = f.read(preview_len * 2)  # small buffer
+        collapsed = re.sub(r"\s+", " ", chunk).strip()
 
-            combined = ' '.join(line.strip() for line in lines)
-            collapsed = re.sub(r'\s+', ' ', combined).strip()
+        if len(collapsed) > preview_len:
+            preview = collapsed[:preview_len-2] + ".."
+        else:
+            preview = collapsed
 
-            if len(collapsed) <= preview_len:
-                preview = collapsed
-            else:
-                preview = collapsed[:preview_len-2] + '..'
+        return (size, preview)
 
-        return (num_lines, num_chars, preview)
     except Exception:
-        return (0, 0, "")
+        return (0, "")
 
 def tb_stats():
-    table = DataTable(4, ['Buffer', 'Lines', 'Chars', 'Preview'])
+    table = DataTable(3, ['Buffer', 'Bytes', 'Preview'])
     for fname in STANDARD_FILES:
-        table.add_row([fname, *get_stats(fname)])
-    print(*MdFormat(table).format(['cyan', 'red', 'yellow', 'white']), sep='\n')
+        size, preview = get_stats(fname)
+        if size == 0:
+            continue
+        table.add_row([fname, size, preview])
+    print(*MdFormat(table).format(['cyan', 'yellow', 'white']), sep='\n')
 
 def tb_regen():
     regenerated = [f for f in STANDARD_FILES if not (tb_path / f).exists()]
     for f in regenerated:
         (tb_path / f).touch()
+    
+    for d in string.digits:
+        p = tb_path / d
+        st = os.stat(p)
+        os.chmod(p, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
     msg = "Regenerated files: " + ' '.join(regenerated) if regenerated else "All standard buffer files already exist."
     print(msg)
 
-def tb_first_empty():
-    for fname in STANDARD_FILES:
-        if get_stats(fname)[0] == 0:
-            return os.path.join(tb_path, fname)
-    return None
-
 def tb_non_empty():
-    used = [fname for fname in STANDARD_FILES if get_stats(fname)[0] > 0]
+    used = [fname for fname in STANDARD_FILES if get_file_size(os.path.join(tb_path, fname)) > 0]
     if used:
         open_editor(used)
     else:
         print("No non-empty buffers to open.")
         sys.exit(1)
+
+def tb_free():
+    res = []
+    for fname in string.ascii_lowercase:
+        p = os.path.join(tb_path, fname)
+        if get_file_size(p) == 0:
+            res.append(fname)
+    print(*res)
 
 def open_editor(files, cd_to_base=True):
     """
@@ -102,7 +118,7 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-l", "--list", action="store_true", help="Show buffer list with stats")
     group.add_argument("-i", "--init", action="store_true", help="Initialize missing buffers")
-    group.add_argument("-e", "--empty", action="store_true", help="Return path to first empty buffer")
+    group.add_argument("-f", "--free", action="store_true", help="Return list of free buffers")
     group.add_argument("-u", "--used", action="store_true", help="Open all used buffers")
     group.add_argument("file", nargs="?", help="Open or create buffer file a-z or 0-9")
 
@@ -112,14 +128,10 @@ def main():
         tb_stats()
     elif args.init:
         tb_regen()
-    elif args.empty:
-        e = tb_first_empty()
-        if e:
-            print(e)
-        else:
-            sys.exit(1)
     elif args.used:
         tb_non_empty()
+    elif args.free:
+        tb_free()
     elif args.file is None:
         e = tb_first_empty()
         if e:
