@@ -82,13 +82,15 @@ def tb_non_empty():
         print("No non-empty buffers to open.")
         sys.exit(1)
 
-def tb_free():
+def tb_free(lim = len(string.ascii_lowercase)):
     res = []
     for fname in string.ascii_lowercase:
         p = os.path.join(tb_path, fname)
+        if len(res) == lim:
+            break
         if get_file_size(p) == 0:
             res.append(fname)
-    print(*res)
+    return res
 
 def open_editor(files, cd_to_base=True):
     """
@@ -131,11 +133,11 @@ def main():
     elif args.used:
         tb_non_empty()
     elif args.free:
-        tb_free()
+        print(*tb_free())
     elif args.file is None:
-        e = tb_first_empty()
-        if e:
-            open_editor([e])
+        e = tb_free(1)
+        if len(e) > 0:
+            open_editor([e[0]])
         else:
             sys.exit(1)
     elif args.file in STANDARD_FILES:
