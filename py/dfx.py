@@ -29,6 +29,12 @@ def main():
         help="Target format"
     )
 
+    parser.add_argument(
+        '--parse-types',
+        action='store_true',
+        help="Whether to parse types (e.g. double, int) during transformation"
+    )
+
     # Additional transforms while conversion
     parser.add_argument(
         '--tf-backtick',
@@ -50,9 +56,9 @@ def main():
     args = parser.parse_args()
     input = StreamUtils.read_stream(args.input_file)
     if args.from_format == 'csv':
-      table = CsvFormat(input).table
+      table = CsvFormat(input, parse_types=args.parse_types).table
     elif args.from_format == 'md':
-      table = MdFormat(input).table
+      table = MdFormat(input, parse_types=args.parse_types).table
     else:
       raise ValueError(f"Unsupported format: {args.from_format}")
 

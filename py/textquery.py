@@ -39,14 +39,14 @@ def main():
         
         with open(path, "r", encoding="utf-8", newline='') as f:
             lines = StreamUtils.read_stream(f)
-            table = CsvFormat(lines).table
+            table = CsvFormat(lines, parse_types=True).table
             tables[name] = table
 
     if len(tables) == 0:
         # Use default table name for stdin input
         default_table_name = args.default_table
         lines = StreamUtils.read_stream(sys.stdin)
-        table = CsvFormat(lines).table
+        table = CsvFormat(lines, parse_types=True).table
         tables[default_table_name] = table
 
     db = InMemoryDb(tables)

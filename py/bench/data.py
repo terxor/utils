@@ -78,7 +78,9 @@ from typing import List, Union
 from bench.data import DataTable
 
 class DataFormat(ABC):
-    def __init__(self, data: Union[DataTable, List[str]]):
+    def __init__(self, data: Union[DataTable, List[str]], parse_types=True):
+        self.parse_types = parse_types
+
         if isinstance(data, DataTable):
             self.table = data
         elif isinstance(data, list):
@@ -91,7 +93,7 @@ class DataFormat(ABC):
         table = DataTable(len(header), header)
         for line in self._get_data_lines(lines):
             table.add_row(
-                [Parser.parse_value(field) for field in self._parse_single_line(line)]
+                [Parser.parse_value(field, self.parse_types) for field in self._parse_single_line(line)]
             )
         return table
 
@@ -264,7 +266,10 @@ class MdFormat(DataFormat):
 
 class Parser:
     @staticmethod
-    def parse_value(value: Optional[str]) -> Primitive:
+    def parse_value(value: Optional[str], parse_types = True) -> Primitive:
+        if not parse_types:
+            return value or ""
+
         if value is None or not isinstance(value, str):
             return None
         
