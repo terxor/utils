@@ -193,7 +193,7 @@ class MdFormat(DataFormat):
             raise ValueError("Invalid markdown input.")
         return lines[2:]
 
-    def format(self, colors=None) -> List[str]:
+    def format(self, color_table=None, ignore_header=False) -> List[str]:
         # Get headers and data rows from the DataTable object
         table = self.table
         headers = table.headers
@@ -230,9 +230,9 @@ class MdFormat(DataFormat):
         separator_row = "| " + " | ".join("-" * col_widths[i] for i in range(num_cols)) + " |"
 
         # Build data rows
-        lines = [header_row, separator_row]
-        for row in str_rows:
-            row_str = "| " + " | ".join(pad(cell, col_widths[i], colors[i] if colors is not None and i < len(colors) else None) for i, cell in enumerate(row)) + " |"
+        lines = [] if ignore_header else [header_row, separator_row]
+        for row_idx, row in enumerate(str_rows):
+            row_str = "| " + " | ".join(pad(cell, col_widths[i], color_table[row_idx][i] if color_table else None) for i, cell in enumerate(row)) + " |"
             lines.append(row_str)
         return lines
     

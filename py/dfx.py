@@ -49,8 +49,24 @@ def main():
         '--md-colors',
         dest='md_colors',
         type=str,
-        default='',
-        help="Comma sep list of colors. Will ignore for missing/extra cols."
+        default=None,
+        help="""
+Apply terminal colors to markdown output.
+The format is a bit complex to allow a lot of custom coloring.
+For example: "[2:][1]=red,[][2]=green,[2][1]=blue" would mean
+- Color all rows with indices >= 2 in column 1 as red
+- Color all rows in column 2 as green
+- Color row 2 in column 1 as blue
+
+Rules are applied in the given order
+"""
+    )
+
+    parser.add_argument(
+        '--md-no-header',
+        dest='md_no_header',
+        action='store_true',
+        help="Whether to not print header for MD table"
     )
 
     args = parser.parse_args()
@@ -78,8 +94,78 @@ def main():
               res = f'`{val}`'
             table[i][c] = res
 
-    StreamUtils.write_to_stream(args.output, MdFormat(table).format(args.md_colors.split(',')) if args.to_format == 'md' else
+    color_table=None
+    if args.md_colors:
+        color_table = parse_and_generate_color_table(args.md_colors, *table.size())
+
+    StreamUtils.write_to_stream(args.output, MdFormat(table).format(color_table=color_table, ignore_header=args.md_no_header) if args.to_format == 'md' else
         CsvFormat(table).format())
+
+def parse_and_generate_color_table(rule_str, n_rows, n_cols):
+    """
+    Parse a color rules string and generate a concrete color table.
+
+    Args:
+        rule_str: string from CLI, e.g., "[2:][1]=red,[][2]=green,[2][1]=blue"
+        n_rows: number of data rows (excluding header)
+        n_cols: number of columns
+
+    Returns:
+        2D list [n_rows][n_cols] of color strings or None
+    """
+    # ---- parse rules ----
+    import re
+    if not rule_str.strip():
+        return [[None]*n_cols for _ in range(n_rows)]
+
+    rule_pattern = re.compile(r'^\[(.*?)\]\[(.*?)\]=(.*)$')
+    rules = []
+    for raw_rule in rule_str.split(","):
+        raw_rule = raw_rule.strip()
+        if not raw_rule:
+            continue
+        m = rule_pattern.match(raw_rule)
+        if not m:
+            raise ValueError(f"Invalid rule format: {raw_rule}")
+        row_sel, col_sel, color = m.groups()
+
+        def parse_selector(sel):
+            sel = sel.strip()
+            if sel == "":
+                return None
+            if ":" in sel:
+                parts = sel.split(":")
+                start = int(parts[0]) if parts[0] else None
+                end = int(parts[1]) if len(parts) > 1 and parts[1] else None
+                return (start, end)
+            else:
+                n = int(sel)
+                return (n, n)
+
+        row_range = parse_selector(row_sel)
+        col_range = parse_selector(col_sel)
+        rules.append({"row": row_range, "col": col_range, "color": color.strip()})
+
+    # ---- generate color table ----
+    table = [[None for _ in range(n_cols)] for _ in range(n_rows)]
+
+    def in_range(idx, rng):
+        if rng is None:
+            return True
+        start, end = rng
+        if start is not None and idx < start:
+            return False
+        if end is not None and idx > end:
+            return False
+        return True
+
+    for rule in rules:
+        for r in range(1, n_rows+1):
+            for c in range(1, n_cols+1):
+                if in_range(r, rule["row"]) and in_range(c, rule["col"]):
+                    table[r-1][c-1] = rule["color"]
+
+    return table
 
 if __name__ == "__main__":
     main()
