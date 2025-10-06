@@ -93,11 +93,25 @@ class TestDataTable(unittest.TestCase):
         table.append(["b",2])
         table.append(["b",4])
         table.append(["c",3])
-        filtered = table.filter(f0="b")
+        filtered = table.filter(filters={"f0":"b"})
 
         self.assertEqual(table.size(), 4)
         self.assertEqual(filtered.size(), 2)
         self.assertEqual(filtered.cols(), table.cols())
+        self.assertEqual(filtered.data(), [["b",2],["b",4]])
+
+    def test_filter_invert(self):
+        table = DataTable(2)
+        table.append(["a",1])
+        table.append(["b",2])
+        table.append(["b",4])
+        table.append(["c",3])
+        filtered = table.filter(filters={"f0":"b"}, invert=True)
+
+        self.assertEqual(table.size(), 4)
+        self.assertEqual(filtered.size(), 2)
+        self.assertEqual(filtered.cols(), table.cols())
+        self.assertEqual(filtered.data(), [["a",1],["c",3]])
 
     def test_delete(self):
         table = DataTable(2)

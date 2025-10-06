@@ -95,18 +95,18 @@ class DataTable:
                 return i
         return -1
 
-    def filter(self, **kwargs) -> "DataTable":
+    def filter(self, filters: dict[str, Primitive], invert=False) -> "DataTable":
         res = DataTable(self._headers)
         vals={}
         for i,h in enumerate(self._headers):
-            if h in kwargs:
-                vals[i]=kwargs[h]
+            if h in filters:
+                vals[i]=filters[h]
 
         for i in range(self.size()):
-            match=True
+            match=not invert
             for index,val in vals.items():
                 if self._data[i][index] != val:
-                    match=False
+                    match=invert
                     break
             if match:
                 res.append(list(self._data[i]))

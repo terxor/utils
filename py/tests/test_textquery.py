@@ -1,6 +1,6 @@
 import unittest
 from bench.data import DataTable
-from bench.textquery import InMemoryDb, TypeInferer, SQLiteType
+from bench.textquery import InMemoryDb, TypeInferer, SQLiteType, quick_query
 
 class TestInMemoryDb(unittest.TestCase):
 
@@ -135,6 +135,18 @@ class TestTypeInferer(unittest.TestCase):
         table.append(["Alice", 30, True])
         table.append(["Bob", 25, False])
         self.assertEqual(TypeInferer.infer(table), [SQLiteType.TEXT, SQLiteType.INTEGER, SQLiteType.INTEGER])
+
+class TestQuickQuery(unittest.TestCase):
+
+    def test_quick_query_works(self):
+        table = DataTable(["Name", "Age", "IsStudent"])
+        table.append(["Alice", 30, True])
+        table.append(["Bob", 25, False])
+        result = quick_query(table, "select Age as a from t")
+        self.assertEqual(result.size(), 2)
+        self.assertEqual(result.ncols(), 1)
+        self.assertEqual(result.cols(), ["a"])
+        self.assertEqual(result.data(), [[30],[25]])
 
 if __name__ == '__main__':
     unittest.main()

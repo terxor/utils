@@ -99,3 +99,8 @@ class TypeInferer:
 
         return [t if t is not None else SQLiteType.TEXT for t in inferred]
 
+# Convenience method for querying of a single DataTable
+# The table is referred by default name 't'
+def quick_query (table: DataTable, query: str) -> DataTable:
+    return InMemoryDb({'t': table}).query(query)
+
