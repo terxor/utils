@@ -3,7 +3,7 @@
 import argparse
 import os
 import sys
-from bench.data import CsvFormat, MdFormat, StreamUtils
+from bench.data import CsvFormat, MdFormat
 from bench.textquery import InMemoryDb
 
 def parse_args():

@@ -53,15 +53,15 @@ def get_stats(fname, preview_len=50):
         return (0, "")
 
 def tb_stats():
-    table = DataTable(3, ['Buffer', 'Bytes', 'Preview'])
-    ctable = DataTable(3)
+    table = DataTable(['Buffer', 'Bytes', 'Preview'])
+    ctable = []
     for fname in STANDARD_FILES:
         size, preview = get_stats(fname)
         if size == 0:
             continue
-        table.add_row([fname, size, preview])
-        ctable.add_row(['cyan', 'yellow', 'white'])
-    print(*MdFormat(table).format(color_table=ctable), sep='\n')
+        table.append([fname, size, preview])
+        ctable.append(['cyan', 'yellow', 'white'])
+    print(MdFormat.render(table, color_table=ctable), end='')
 
 def tb_regen():
     regenerated = [f for f in STANDARD_FILES if not (tb_path / f).exists()]

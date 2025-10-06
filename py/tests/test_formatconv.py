@@ -2,7 +2,7 @@ import unittest
 from typing import List
 
 from importlib.resources import files
-from bench.data import DataTable, StreamUtils, MdFormat, CsvFormat
+from bench.data import DataTable, MdFormat, CsvFormat
 
 class TestTwoWayConversions(unittest.TestCase):
 

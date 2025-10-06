@@ -166,16 +166,6 @@ class DataTable:
             output += '\t'.join(str(item) for item in row) + '\n'
         return output.strip()
 
-class StreamUtils:
-    @staticmethod
-    def read_stream(stream: TextIO) -> List[str]:
-        return stream.read().splitlines()
-
-    @staticmethod
-    def write_to_stream(stream: TextIO, lines: List[str]):
-        lines_with_newlines = [f"{line}\n" for line in lines]
-        stream.writelines(lines_with_newlines)
-
 from abc import ABC, abstractmethod
 from typing import List, Union
 from bench.data import DataTable
