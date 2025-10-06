@@ -51,7 +51,7 @@ def main():
     query = ' '.join(args.query_parts)
     result_table = db.query(query)
     output = CsvFormat.render(result_table) if args.csv else MdFormat.render(result_table)
-    print(output, end='')
+    print(output)
 
 if __name__ == "__main__":
     main()

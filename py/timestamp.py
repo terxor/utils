@@ -40,7 +40,7 @@ def main(args):
         output = CsvFormat.render(table)
     else:
         output = MdFormat.render(table)
-    print(output, end='')
+    print(output)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

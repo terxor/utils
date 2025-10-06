@@ -105,7 +105,7 @@ Rules are applied in the given order
         output = CsvFormat.render(table)
     else:
       raise ValueError(f"Unsupported format: {args.to_format}")
-    print(output, end='')
+    print(output)
 
 def parse_and_generate_color_table(rule_str, n_rows, n_cols):
     """

@@ -208,7 +208,7 @@ class CsvFormat(DataFormat):
         lines = [to_csv_line(table.cols())]
         for row in table.data():
             lines.append(to_csv_line(row))
-        return '\n'.join(lines) + '\n'
+        return '\n'.join(lines)
 
     @staticmethod
     def _parse_line(line: str) -> List[Optional[str]]:
@@ -322,7 +322,7 @@ class MdFormat(DataFormat):
         for row_idx, row in enumerate(str_rows):
             row_str = "| " + " | ".join(pad(cell, col_widths[i], color_table[row_idx][i] if color_table else None) for i, cell in enumerate(row)) + " |"
             lines.append(row_str)
-        return '\n'.join(lines) + '\n'
+        return '\n'.join(lines)
     
     @staticmethod
     def _parse_line(line: str) -> List[Optional[str]]:

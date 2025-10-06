@@ -113,7 +113,7 @@ class TestMdFormatting(unittest.TestCase):
             '| ---- | ---- | ---- |\n'
             '| 1    | 2    | 3    |\n'
             '| 4    | 5    | "6"  |\n'
-            '| 7    | "8"  | 9    |\n'
+            '| 7    | "8"  | 9    |'
         )
 
     def test_md_formatting_numeric_reformat(self):
@@ -126,7 +126,7 @@ class TestMdFormatting(unittest.TestCase):
             '| col1 | col2     | col3  |\n'
             '| ---- | -------- | ----- |\n'
             '| 1    | -2000    | 3.14  |\n'
-            '| 40   | -3.66667 | 1e-16 |\n'
+            '| 40   | -3.66667 | 1e-16 |'
         )
 
 if __name__ == "__main__":

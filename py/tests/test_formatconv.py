@@ -14,12 +14,12 @@ class TestTwoWayConversions(unittest.TestCase):
     def _test_csv_to_md(self, name):
         csv = self._read_test_file(f"{name}.csv")
         md = self._read_test_file(f"{name}.md")
-        self.assertEqual(md, MdFormat.render(CsvFormat.parse(csv)))
+        self.assertEqual(md.strip('\n'), MdFormat.render(CsvFormat.parse(csv)))
 
     def _test_md_to_csv(self, name):
         csv = self._read_test_file(f"{name}.csv")
         md = self._read_test_file(f"{name}.md")
-        self.assertEqual(csv, CsvFormat.render(MdFormat.parse(md)))
+        self.assertEqual(csv.strip('\n'), CsvFormat.render(MdFormat.parse(md)))
 
     def _test_two_way_conv(self, csv, md):
         table = CsvFormat.parse(csv)
@@ -40,26 +40,26 @@ class TestTwoWayConversions(unittest.TestCase):
     def test_simple_conv(self):
         self._test_two_way_conv(
             'Header1,Header2\n'
-            'Data1,Data2\n',
+            'Data1,Data2',
             '| Header1 | Header2 |\n'
             '| ------- | ------- |\n'
-            '| Data1   | Data2   |\n'
+            '| Data1   | Data2   |'
         )
 
     def test_short_or_empty(self):
         self._test_two_way_conv(
             'a,b,c\n'
-            ',x,\n',
+            ',x,',
             '| a   | b   | c   |\n'
             '| --- | --- | --- |\n'
-            '|     | x   |     |\n'
+            '|     | x   |     |'
         )
 
     def test_header_only(self):
         self._test_two_way_conv(
-            'a,b,c\n',
+            'a,b,c',
             '| a   | b   | c   |\n'
-            '| --- | --- | --- |\n'
+            '| --- | --- | --- |'
         )
 
 class TestDataTableConverter(unittest.TestCase):
@@ -72,7 +72,7 @@ class TestDataTableConverter(unittest.TestCase):
         self.assertEqual(CsvFormat.render(self.table),
             "Name,Age,Passed\n"
             "Alice,30,true\n"
-            "Bob,25,false\n"
+            "Bob,25,false"
         )
 
     def test_csv_round_trip(self):
@@ -85,7 +85,7 @@ class TestDataTableConverter(unittest.TestCase):
             "| Name  | Age | Passed |\n"
             "| ----- | --- | ------ |\n"
             "| Alice | 30  | true   |\n"
-            "| Bob   | 25  | false  |\n"
+            "| Bob   | 25  | false  |"
         )
 
     def test_from_markdown_lines(self):

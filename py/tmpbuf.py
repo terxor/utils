@@ -61,7 +61,7 @@ def tb_stats():
             continue
         table.append([fname, size, preview])
         ctable.append(['cyan', 'yellow', 'white'])
-    print(MdFormat.render(table, color_table=ctable), end='')
+    print(MdFormat.render(table, color_table=ctable))
 
 def tb_regen():
     regenerated = [f for f in STANDARD_FILES if not (tb_path / f).exists()]
