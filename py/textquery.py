@@ -38,22 +38,21 @@ def main():
             sys.exit(1)
         
         with open(path, "r", encoding="utf-8", newline='') as f:
-            lines = StreamUtils.read_stream(f)
-            table = CsvFormat(lines, parse_types=True).table
+            table = CsvFormat.parse(f.read())
             tables[name] = table
 
     if len(tables) == 0:
         # Use default table name for stdin input
         default_table_name = args.default_table
-        lines = StreamUtils.read_stream(sys.stdin)
-        table = CsvFormat(lines, parse_types=True).table
+        table = CsvFormat.parse(sys.stdin.read(), parse_types=True)
         tables[default_table_name] = table
 
     db = InMemoryDb(tables)
     query = ' '.join(args.query_parts)
     result_table = db.query(query)
-    output = CsvFormat(result_table).format() if args.csv else MdFormat(result_table).format()
-    StreamUtils.write_to_stream(sys.stdout, output)
+    output = CsvFormat.render(result_table) if args.csv else MdFormat.render(result_table)
+    print(output, end='')
 
 if __name__ == "__main__":
     main()
+

@@ -70,11 +70,11 @@ Rules are applied in the given order
     )
 
     args = parser.parse_args()
-    input = StreamUtils.read_stream(args.input_file)
+    content=args.input_file.read()
     if args.from_format == 'csv':
-      table = CsvFormat(input, parse_types=args.parse_types).table
+      table = CsvFormat.parse(content, parse_types=args.parse_types)
     elif args.from_format == 'md':
-      table = MdFormat(input, parse_types=args.parse_types).table
+      table = MdFormat.parse(content, parse_types=args.parse_types)
     else:
       raise ValueError(f"Unsupported format: {args.from_format}")
 
@@ -96,10 +96,16 @@ Rules are applied in the given order
 
     color_table=None
     if args.md_colors:
-        color_table = parse_and_generate_color_table(args.md_colors, *table.size())
+        color_table = parse_and_generate_color_table(args.md_colors, table.size(), table.ncols())
 
-    StreamUtils.write_to_stream(args.output, MdFormat(table).format(color_table=color_table, ignore_header=args.md_no_header) if args.to_format == 'md' else
-        CsvFormat(table).format())
+    output = ''
+    if args.to_format == 'md':
+        output = MdFormat.render(table, color_table=color_table, ignore_header=args.md_no_header)
+    elif args.to_format == 'csv':
+        output = CsvFormat.render(table)
+    else:
+      raise ValueError(f"Unsupported format: {args.to_format}")
+    print(output, end='')
 
 def parse_and_generate_color_table(rule_str, n_rows, n_cols):
     """

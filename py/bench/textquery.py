@@ -18,12 +18,12 @@ class InMemoryDb:
         for table_name, table in tables.items():
             types = [t.name for t in TypeInferer.infer(table)]
 
-            columns = [f'"{name}" {col_type}' for name, col_type in zip(table.headers, types)]
+            columns = [f'"{name}" {col_type}' for name, col_type in zip(table.cols(), types)]
             create_stmt = f'CREATE TABLE "{table_name}" ({", ".join(columns)});'
             self._cursor.execute(create_stmt)
 
             # Insert data
-            placeholders = ', '.join('?' * table.num_columns)
+            placeholders = ', '.join('?' * table.ncols())
             insert_stmt = f'INSERT INTO "{table_name}" VALUES ({placeholders});'
             for row in table.data():
                 self._cursor.execute(insert_stmt, row)
@@ -35,9 +35,9 @@ class InMemoryDb:
         headers = [desc[0] for desc in self._cursor.description]
         rows = self._cursor.fetchall()
 
-        result = DataTable(num_columns=len(headers), headers=headers)
+        result = DataTable(headers)
         for row in rows:
-            result.add_row(list(row))
+            result.append(list(row))
         return result
 
     def close(self):
@@ -90,7 +90,7 @@ class TypeInferer:
 
     @classmethod
     def infer(cls, table) -> List[SQLiteType]:
-        inferred: List[Optional[SQLiteType]] = [None] * table.num_columns
+        inferred: List[Optional[SQLiteType]] = [None] * table.ncols()
 
         for row in table.data():
             for i, value in enumerate(row):

@@ -231,12 +231,12 @@ def convert_time_output_to_data_table(time_output: TimeOutput) -> DataTable:
     num_columns = len(headers)
     
     # Initialize the DataTable
-    data_table = DataTable(num_columns=num_columns, headers=headers)
+    data_table = DataTable(headers)
 
     # Add Epoch time rows
-    data_table.add_row(['epoch', 'seconds', time_output.epoch_seconds])
-    data_table.add_row(['epoch', 'ms', time_output.epoch_millis])
-    data_table.add_row(['epoch', 'micros', time_output.epoch_micros])
+    data_table.append(['epoch', 'seconds', time_output.epoch_seconds])
+    data_table.append(['epoch', 'ms', time_output.epoch_millis])
+    data_table.append(['epoch', 'micros', time_output.epoch_micros])
 
     # Add Timezone specific time rows
     for label in time_output.tz_times.keys():
@@ -244,7 +244,7 @@ def convert_time_output_to_data_table(time_output: TimeOutput) -> DataTable:
             category = label
             time_type = time_output.fmt_names[i]
             value = time_output.tz_times[label][i]
-            data_table.add_row([category, time_type, value])
+            data_table.append([category, time_type, value])
             
     return data_table
 

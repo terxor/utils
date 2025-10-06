@@ -1,64 +1,167 @@
 from typing import List, Optional, Union
-from typing import TextIO
+from typing import TextIO, Callable
 import re
 
 Primitive = Union[bool, int, float, str, type(None)]
+Row = Union[dict[str,Primitive], List[Primitive]]
 
+# A `DataTable` is basically ordered tabular data.
+# For values, only `Primitive` types are supported.
+# However, homogeneity in columns is not mandatory.
+# Columns are always stored as strings internally.
+# If columns are not provided, a naming convention `f{i}` is used.
 class DataTable:
-    def __init__(self, num_columns: int, headers: List[Optional[str]] = None):
-        if num_columns <= 0:
-            raise ValueError("Number of columns must be positive.")
-        
-        self.num_columns = num_columns
 
-        if headers is None:
-            self.headers = [f"col{i+1}" for i in range(num_columns)]
+    # Members:
+    #   _headers (list of headers)
+    #   _header_index (dictionary from label to column index)
+    #   _ncols
+
+    def __init__(self, p: Union[int, List[Optional[str]]]):
+        if isinstance(p, int):
+            if p <= 0:
+                raise ValueError("Number of columns must be positive.")
+            self._headers = [f"f{i}" for i in range(p)]
+        elif isinstance(p, list):
+            if len(p) == 0:
+                raise ValueError("Number of columns must be positive.")
+            for i,c in enumerate(p):
+                if not isinstance(c, str):
+                    raise ValueError("Each column name must be a string")
+            self._headers = list(p)
         else:
-            if len(headers) != num_columns:
-                raise ValueError("Length of headers must match number of columns.")
-            self.headers = [
-                h if h is not None else f"col{i+1}"
-                for i, h in enumerate(headers)
-            ]
-
-        if len(self.headers) != num_columns:
-            raise ValueError("Length of headers must match number of columns.")
-
+            raise ValueError(f"invalid argument for init: {p}")
+        
+        self._header_index = {}
+        for i, h in enumerate(self._headers):
+            if h in self._header_index:
+                raise ValueError(f"Duplicate column {h}")
+            self._header_index[h] = i
+        self._ncols = len(self._headers)
         self._data: List[List[Primitive]] = []
+        self._nrows = 0
 
-    def size(self):
-        """Returns (rows, columns)"""
-        return (len(self._data), self.num_columns)
+    def size(self) -> int:
+        """Returns number of rows"""
+        return self._nrows
+    
+    def cols(self):
+        """Returns list of columns"""
+        return list(self._headers)
+    
+    def ncols(self):
+        return self._ncols
+
+    def _normalize_row(self, row: Row) -> List[Primitive]:
+        if isinstance(row, dict):
+            r = [None] * self._ncols
+            for k, v in row.items():
+                if k in self._header_index:
+                    r[self._header_index[k]] = v
+            return r
+        elif isinstance(row, list):
+            if len(row) != self._ncols:
+                raise ValueError(f"Row length of {row} does not match number of columns (headers: {self._headers}).")
+            for item in row:
+                if not isinstance(item, (bool, int, float, str, type(None))):
+                    raise TypeError(f"Unsupported data type: {type(item)}")
+            return row
+        else:
+            raise ValueError("invalid argument for row")
+
+    def insert(self, pos: int, row: Row):
+        if pos < 0 or pos > self.size():
+            raise ValueError("Invalid insert position")
+        self._data.insert(pos, self._normalize_row(row)) 
+        self._nrows += 1
+
+    def append(self, row: Row):
+        self.insert(self.size(), row)
+
+    def index(self, **kwargs) -> int:
+        """Find first index of matching params, or -1"""
+        vals={}
+        for i,h in enumerate(self._headers):
+            if h in kwargs:
+                vals[i]=kwargs[h]
+
+        for i in range(self.size()):
+            match=True
+            for index,val in vals.items():
+                if self._data[i][index] != val:
+                    match=False
+                    break
+            if match:
+                return i
+        return -1
+
+    def filter(self, **kwargs) -> "DataTable":
+        res = DataTable(self._headers)
+        vals={}
+        for i,h in enumerate(self._headers):
+            if h in kwargs:
+                vals[i]=kwargs[h]
+
+        for i in range(self.size()):
+            match=True
+            for index,val in vals.items():
+                if self._data[i][index] != val:
+                    match=False
+                    break
+            if match:
+                res.append(list(self._data[i]))
+        return res
+    
+    def delete(self, index: int):
+        if index < 0 or index >= self.size():
+            raise ValueError("Invalid index")
+        del self._data[index]
+        self._nrows -= 1
+
+    def get(self, index: int) -> dict[str, Primitive]:
+        if index < 0 or index >= self.size():
+            raise ValueError("Invalid index")
+        r={}
+        for i in range(self._ncols):
+            r[self._headers[i]] = self._data[index][i]
+        return r
+
+    def col(self, p: Union[int,str]) -> List[Primitive]:
+        if isinstance(p,str):
+            index = self._headers.index(p)
+        else:
+            index = p
+        if not isinstance(index, int) or index < 0 or index >= self._ncols:
+            raise ValueError("Invalid index")
+        res=[]
+        for i in range(self.size()):
+            res.append(self._data[i][index])
+        return res
+
+    def restructure(self, col_map):
+        """Returns new table based on column mapping"""
+        t = DataTable(list(col_map.keys()))
+        indices = []
+        for x in col_map.values():
+            indices.append(self._headers.index(x))
+        for i in range(self.size()):
+            r = []
+            for j in indices:
+                r.append(self._data[i][j])
+            t.append(r)
+        return t
 
     def data(self):
         """Returns the internal data as read-only"""
         return [row.copy() for row in self._data]
 
-    def add_row(self, row: List[Primitive]):
-        """Adds a row to the data table after validation"""
-        if len(row) != self.num_columns:
-            raise ValueError(f"Row length of {row} does not match number of columns (headers: {self.headers}).")
-        for item in row:
-            if not isinstance(item, (bool, int, float, str, type(None))):
-                raise TypeError(f"Unsupported data type: {type(item)}")
-        self._data.append(row)
-
-    def to_records(self):
-        res = []
-        for row in self._data:
-            record = {}
-            for i in range(self.num_columns):
-                record[self.headers[i]] = row[i]
-            res.append(record)
-        return res
-
     def __getitem__(self, index):
         """Allows table[i][j] access via table[i][j] -> table[i][j]"""
-        return self._data[index]
+        return list(self._data[index])
 
     def __str__(self):
         """Returns a string representation of the table"""
-        output = '\t'.join(self.headers) + '\n'
+        output = '\t'.join(self._headers) + '\n'
         for row in self._data:
             output += '\t'.join(str(item) for item in row) + '\n'
         return output.strip()
@@ -78,71 +181,47 @@ from typing import List, Union
 from bench.data import DataTable
 
 class DataFormat(ABC):
-    def __init__(self, data: Union[DataTable, List[str]], parse_types=True):
-        self.parse_types = parse_types
-
-        if isinstance(data, DataTable):
-            self.table = data
-        elif isinstance(data, list):
-            self.table = self._parse_raw(data)
-        else:
-            raise TypeError("Expected DataTable or list of strings")
-
-    def _parse_raw(self, lines: List[str]) -> DataTable:
-        header = self._parse_single_line(self._get_header_line(lines))
-        table = DataTable(len(header), header)
-        for line in self._get_data_lines(lines):
-            table.add_row(
-                [Parser.parse_value(field, self.parse_types) for field in self._parse_single_line(line)]
-            )
-        return table
-
+    @staticmethod
     @abstractmethod
-    def _get_header_line(self, lines: List[str]) -> str:
-        pass
-
-    @abstractmethod
-    def _get_data_lines(self, lines: List[str]) -> List[str]:
-        pass
-
-    @abstractmethod
-    def _parse_single_line(self, line: str) -> List[Optional[str]]:
-        pass
-
-    @abstractmethod
-    def format(self) -> List[str]:
-        """Format the data into the specific format (e.g. CSV, Markdown)."""
+    def parse(content: str, **options) -> DataTable:
         pass
 
     @staticmethod
-    def _val_to_str(val: Primitive) -> str:
-        if val is None:
-            return ""
-        elif isinstance(val, bool):
-            return "true" if val else "false"
-        elif isinstance(val, float):
-            return f"{val:.6g}"
-        return str(val)
+    @abstractmethod
+    def render(table: DataTable, **options) -> str:
+        pass
 
 class CsvFormat(DataFormat):
-    def _get_header_line(self, lines: List[str]) -> str:
+    @staticmethod
+    @abstractmethod
+    def parse(content: str, **options) -> DataTable:
+        # Supported options:
+        # - parse_types
+        lines = content.strip('\n').split('\n')
         if len(lines) == 0:
             raise ValueError("Empty CSV input.")
-        return lines[0]
-    
-    def _get_data_lines(self, lines: List[str]) -> List[str]:
-        return lines[1:]
+        header = CsvFormat._parse_line(lines[0])
+        table = DataTable(header)
+        for line in lines[1:]:
+            row = CsvFormat._parse_line(line)
+            for i, field in enumerate(row):
+                row[i] = Parser.parse_value(field, options.get('parse_types', False))
+            table.append(row)
+        return table
 
-    def format(self) -> List[str]:
+    @staticmethod
+    def render(table: DataTable, **options) -> str:
+
         def to_csv_line(row: List[Primitive]) -> str:
-            return ','.join([DataFormat._val_to_str(cell) for cell in row])
+            return ','.join([Parser._val_to_str(cell) for cell in row])
 
-        lines = [to_csv_line(self.table.headers)]
-        for row in self.table.data():
+        lines = [to_csv_line(table.cols())]
+        for row in table.data():
             lines.append(to_csv_line(row))
-        return lines
+        return '\n'.join(lines) + '\n'
 
-    def _parse_single_line(self, line: str) -> List[Optional[str]]:
+    @staticmethod
+    def _parse_line(line: str) -> List[Optional[str]]:
         """Parse one CSV line handling:
         - quoted fields (with commas or escaped quotes)
         - `""` → empty string
@@ -182,23 +261,42 @@ class CsvFormat(DataFormat):
         fields.append(finalize_field(line, start_index, i))
         return fields
 
-class MdFormat(DataFormat):
-    def _get_header_line(self, lines: List[str]) -> str:
-        if len(lines) == 0:
-            raise ValueError("Empty MD input.")
-        return lines[0]
-    
-    def _get_data_lines(self, lines: List[str]) -> List[str]:
-        if len(lines) < 2:
-            raise ValueError("Invalid markdown input.")
-        return lines[2:]
+# Supported options:
+# - color_table: DataTable of equal dimensions as the table
+#   to be formatted
+# - ignore_header
+# - parse_types
 
-    def format(self, color_table=None, ignore_header=False) -> List[str]:
+class MdFormat(DataFormat):
+    @staticmethod
+    @abstractmethod
+    def parse(content: str, **options) -> DataTable:
+        parse_types = options.get('parse_types', False)
+        # Supported options:
+        # - parse_types, color_table
+        lines = content.strip('\n').split('\n')
+        if len(lines) == 0:
+            raise ValueError("Invalid markdown input")
+        header = MdFormat._parse_line(lines[0])
+        # line[1] is simply ignored
+        table = DataTable(header)
+        for line in lines[2:]:
+            row = MdFormat._parse_line(line)
+            for i, field in enumerate(row):
+                row[i] = Parser.parse_value(field, parse_types=parse_types, empty_str_as_null=True)
+            table.append(row)
+        return table
+
+    @staticmethod
+    def render(table: DataTable, **options) -> str:
+        # Options
+        ignore_header = options.get('ignore_header', False)
+        color_table = options.get('color_table', None)
+
         # Get headers and data rows from the DataTable object
-        table = self.table
-        headers = table.headers
+        headers = table.cols()
         data_rows = table.data()
-        num_cols = table.num_columns
+        num_cols = table.ncols()
 
         # Calculate max width for each column
         # Initialize with header widths
@@ -206,7 +304,7 @@ class MdFormat(DataFormat):
 
         # Precompute stringified rows
         str_rows = [
-            [self._val_to_str(cell) for cell in row]
+            [Parser._val_to_str(cell) for cell in row]
             for row in data_rows
         ]
 
@@ -234,9 +332,10 @@ class MdFormat(DataFormat):
         for row_idx, row in enumerate(str_rows):
             row_str = "| " + " | ".join(pad(cell, col_widths[i], color_table[row_idx][i] if color_table else None) for i, cell in enumerate(row)) + " |"
             lines.append(row_str)
-        return lines
+        return '\n'.join(lines) + '\n'
     
-    def _parse_single_line(self, line: str) -> List[Optional[str]]:
+    @staticmethod
+    def _parse_line(line: str) -> List[Optional[str]]:
         """
         Parse one Markdown table row, e.g.:
 
@@ -260,17 +359,17 @@ class MdFormat(DataFormat):
         def clean(cell: str) -> Optional[str]:
             cell = cell.strip()
             cell = cell.replace(r'\|', '|')
-            return None if cell == '' else cell
+            return cell
 
         return [clean(cell) for cell in raw_cells]
 
 class Parser:
     @staticmethod
-    def parse_value(value: Optional[str], parse_types = True) -> Primitive:
+    def parse_value(value: Optional[str], parse_types = True, empty_str_as_null=False) -> Primitive:
         if not parse_types:
             return value or ""
-
-        if value is None or not isinstance(value, str):
+        
+        if value is None or not isinstance(value, str) or (empty_str_as_null and value == ''):
             return None
         
         if value.lower() in ['true', 'false']:
@@ -300,6 +399,16 @@ class Parser:
     def _is_made_of_float_chars(s: str) -> bool:
         allowed = {'+', '-', '.', 'e', 'E'}
         return all(c.isdigit() or c in allowed for c in s)
+
+    @staticmethod
+    def _val_to_str(val: Primitive) -> str:
+        if val is None:
+            return ""
+        elif isinstance(val, bool):
+            return "true" if val else "false"
+        elif isinstance(val, float):
+            return f"{val:.6g}"
+        return str(val)
 
 class TermColor:
     # Class-level color map using ANSI escape codes

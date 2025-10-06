@@ -111,6 +111,24 @@ class TestTimestampParsing(unittest.TestCase):
                 now_output_exp.epoch_seconds
         )
 
+    def test_convert_to_datatable(self):
+        table = convert_time_output_to_data_table(parse_time('2025-05-26 02:10:51', 'PST'))
+        self.assertEqual(table.cols(), ['Category','Type','Value'])
+        self.assertEqual(table.data(),
+            [['epoch', 'seconds', 1748250651],
+             ['epoch', 'ms', 1748250651000],
+             ['epoch', 'micros', 1748250651000000],
+             ['UTC', 'standard', '2025-05-26 09:10:51'],
+             ['UTC', 'micros', '2025-05-26 09:10:51.000000'],
+             ['UTC', 'iso', '2025-05-26T09:10:51+0000'],
+             ['IST', 'standard', '2025-05-26 14:40:51'],
+             ['IST', 'micros', '2025-05-26 14:40:51.000000'],
+             ['IST', 'iso', '2025-05-26T14:40:51+0530'],
+             ['PST', 'standard', '2025-05-26 02:10:51'],
+             ['PST', 'micros', '2025-05-26 02:10:51.000000'],
+             ['PST', 'iso', '2025-05-26T02:10:51-0700']]
+        )
+
 if __name__ == "__main__":
     unittest.main()
 
