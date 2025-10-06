@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-from bench.data import CsvFormat, MdFormat, StreamUtils
+from bench.data import CsvFormat, MdFormat
 
 def main():
     parser = argparse.ArgumentParser(description="Convert CSV to markdown")

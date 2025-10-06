@@ -3,7 +3,7 @@
 import sys
 import argparse
 from bench.timestamp import parse_time, convert_time_output_to_data_table
-from bench.data import MdFormat, CsvFormat, StreamUtils
+from bench.data import MdFormat, CsvFormat
 
 def main(args):
     parser = argparse.ArgumentParser(
