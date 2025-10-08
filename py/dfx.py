@@ -69,10 +69,17 @@ Rules are applied in the given order
         help="Whether to not print header for MD table"
     )
 
+    parser.add_argument(
+        '--csv-preserve-spaces',
+        dest='csv_preserve_spaces',
+        action='store_true',
+        help="Whether to preserve spaces. Default is trim."
+    )
+
     args = parser.parse_args()
     content=args.input_file.read()
     if args.from_format == 'csv':
-      table = CsvFormat.parse(content, parse_types=args.parse_types)
+      table = CsvFormat.parse(content, parse_types=args.parse_types, trim_spaces=(not args.csv_preserve_spaces))
     elif args.from_format == 'md':
       table = MdFormat.parse(content, parse_types=args.parse_types)
     else:

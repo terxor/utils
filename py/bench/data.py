@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 from typing import TextIO, Callable
 import re
+import csv,io
 
 Primitive = Union[bool, int, float, str, type(None)]
 Row = Union[dict[str,Primitive], List[Primitive]]
@@ -185,71 +186,34 @@ class CsvFormat(DataFormat):
     @staticmethod
     @abstractmethod
     def parse(content: str, **options) -> DataTable:
-        # Supported options:
-        # - parse_types
-        lines = content.strip('\n').split('\n')
-        if len(lines) == 0:
-            raise ValueError("Empty CSV input.")
-        header = CsvFormat._parse_line(lines[0])
+        parse_types = options.get('parse_types', False)
+        trim_spaces = options.get('trim_spaces', False)
+        reader = csv.reader(io.StringIO(content))
+        header = next(reader)
+        header = [f.strip() for f in header]
         table = DataTable(header)
-        for line in lines[1:]:
-            row = CsvFormat._parse_line(line)
-            for i, field in enumerate(row):
-                row[i] = Parser.parse_value(field, options.get('parse_types', False))
+        for row in reader:
+            for i,field in enumerate(row):
+                if trim_spaces:
+                    field = field.strip()
+                row[i] = Parser.parse_value(field, parse_types=parse_types)
             table.append(row)
         return table
 
     @staticmethod
     def render(table: DataTable, **options) -> str:
-
-        def to_csv_line(row: List[Primitive]) -> str:
-            return ','.join([Parser._val_to_str(cell) for cell in row])
-
-        lines = [to_csv_line(table.cols())]
+        output = io.StringIO()
+        writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL,lineterminator='\n')
+        writer.writerow(table.cols())
         for row in table.data():
-            lines.append(to_csv_line(row))
-        return '\n'.join(lines)
+            row = [Parser._val_to_str(cell) for cell in row]
+            writer.writerow(row)
 
-    @staticmethod
-    def _parse_line(line: str) -> List[Optional[str]]:
-        """Parse one CSV line handling:
-        - quoted fields (with commas or escaped quotes)
-        - `""` → empty string
-        - empty field (bare comma) → None
-        """
-        def strip_surrounding_quotes(s: str) -> str:
-            if len(s) >= 2 and s[0] == s[-1] and s[0] == '"':
-                return s[1:-1]
-            return s
-
-        def finalize_field(line: str, start: int, end: int) -> Optional[str]:
-            s = line[start:end].strip()
-            if len(s) == 0:
-                return None
-            s = strip_surrounding_quotes(s)
-            return s.replace('""', '"')  # Replace escaped quotes with single quotes
-
-        fields: List[Optional[str]] = []
-        in_quote = False
-        start_index = 0
-        i = 0
-        while i < len(line):
-            char = line[i]
-
-            if char == '"':
-                if in_quote:
-                    if i + 1 < len(line) and line[i + 1] == '"':
-                        i += 1
-                    else:
-                        in_quote = False
-                else:
-                    in_quote = True
-            elif char == ',' and not in_quote:
-                fields.append(finalize_field(line, start_index, i))
-                start_index = i + 1
-            i += 1
-        fields.append(finalize_field(line, start_index, i))
-        return fields
+        csv_string = output.getvalue()
+        output.close()
+        if csv_string[-1] == '\n':
+            csv_string = csv_string[:-1]
+        return csv_string
 
 # Supported options:
 # - color_table: DataTable of equal dimensions as the table
@@ -273,7 +237,7 @@ class MdFormat(DataFormat):
         for line in lines[2:]:
             row = MdFormat._parse_line(line)
             for i, field in enumerate(row):
-                row[i] = Parser.parse_value(field, parse_types=parse_types, empty_str_as_null=True)
+                row[i] = Parser.parse_value(field, parse_types=parse_types)
             table.append(row)
         return table
 
@@ -292,9 +256,13 @@ class MdFormat(DataFormat):
         # Initialize with header widths
         col_widths = [max(3, len(header)) for header in headers]
 
+        def val_to_md_str(f):
+            res = Parser._val_to_str(f)
+            return res.replace('|', r'\|')
+
         # Precompute stringified rows
         str_rows = [
-            [Parser._val_to_str(cell) for cell in row]
+            [val_to_md_str(cell) for cell in row]
             for row in data_rows
         ]
 
@@ -355,11 +323,11 @@ class MdFormat(DataFormat):
 
 class Parser:
     @staticmethod
-    def parse_value(value: Optional[str], parse_types = True, empty_str_as_null=False) -> Primitive:
+    def parse_value(value: Optional[str], parse_types = True, null_str='') -> Primitive:
         if not parse_types:
             return value or ""
         
-        if value is None or not isinstance(value, str) or (empty_str_as_null and value == ''):
+        if value is None or not isinstance(value, str) or (null_str is not None and value == null_str):
             return None
         
         if value.lower() in ['true', 'false']:

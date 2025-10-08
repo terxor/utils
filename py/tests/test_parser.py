@@ -9,7 +9,8 @@ class TestParser(unittest.TestCase):
         self.assertIsNone(self.parser.parse_value(None))
 
     def test_empty_string(self):
-        self.assertEqual(self.parser.parse_value(""), "")
+        self.assertEqual(self.parser.parse_value(""), None)
+        self.assertEqual(self.parser.parse_value("",null_str=None), "")
 
     def test_boolean_true(self):
         self.assertIs(self.parser.parse_value("true"), True)

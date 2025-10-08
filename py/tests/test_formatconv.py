@@ -62,6 +62,24 @@ class TestTwoWayConversions(unittest.TestCase):
             '| --- | --- | --- |'
         )
 
+    def test_quotes_and_commas(self):
+        self._test_two_way_conv(
+            'Header1,Header2\n'
+            '"a,b","a,""b"""',
+            '| Header1 | Header2 |\n'
+            '| ------- | ------- |\n'
+            '| a,b     | a,"b"   |'
+        )
+
+    def test_pipes(self):
+        self._test_two_way_conv(
+            'Header1,Header2\n'
+            'a|b,a|b|c',
+            '| Header1 | Header2 |\n'
+            '| ------- | ------- |\n'
+            '| a\\|b    | a\\|b\\|c |'
+        )
+
 class TestDataTableConverter(unittest.TestCase):
     def setUp(self):
         self.table = DataTable(["Name", "Age", "Passed"])
